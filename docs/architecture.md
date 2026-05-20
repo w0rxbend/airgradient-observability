@@ -25,7 +25,7 @@ SolidStart app
 
 The LAN edge node is intentionally small. `vmagent` scrapes the AirGradient ONE Prometheus endpoint and buffers remote-write samples on disk before sending them to the OCI VM.
 
-The OCI node runs VictoriaMetrics and Grafana bound to localhost. A reverse proxy terminates TLS and adds Basic Auth. Do not expose port `8428` directly to the internet.
+The OCI node runs a Docker-only stack. VictoriaMetrics, Grafana, the Go backend, and the Solid frontend are private Docker-network services. Containerized Nginx is the only service that publishes host ports `80` and `443`; it terminates TLS and adds Basic Auth. Do not expose port `8428` directly to the internet.
 
 The custom app queries the Go backend proxy. Only the Go backend talks to VictoriaMetrics:
 

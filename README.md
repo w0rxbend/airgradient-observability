@@ -67,6 +67,7 @@ Key guides:
 - [Operations](docs/operations.md)
 - [Security](docs/security.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [Plan Alignment](docs/status.md)
 
 ## Milestones
 

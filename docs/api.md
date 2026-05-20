@@ -2,7 +2,7 @@
 
 The Go backend owns the public app API.
 
-Base URL in local development:
+Base URL in local backend development:
 
 ```text
 http://localhost:8080
@@ -14,7 +14,10 @@ In production, Nginx should proxy `/api/` to the backend so browser calls can st
 
 ```http
 GET /healthz
+GET /api/healthz
 ```
+
+`/healthz` is mainly useful inside the Docker network or when running the backend directly. `/api/healthz` is available through the reverse proxy.
 
 Response:
 
@@ -94,9 +97,12 @@ VictoriaMetrics errors are returned as `502`:
 {"error":"Post \"http://localhost:8428/api/v1/query\": dial tcp [::1]:8428: connect: connection refused"}
 ```
 
+Implemented hardening:
+
+- invalid metric/range/step returns `400`
+- backend VictoriaMetrics query timeout returns `504`
+
 Planned API hardening:
 
-- explicit `400` for invalid params
-- `504` for upstream timeout
 - stale cache fallback
 - `X-Cache` response headers

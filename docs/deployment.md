@@ -31,7 +31,7 @@ cd infra/oci
 DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml up -d
 ```
 
-The stack starts Nginx, VictoriaMetrics, Grafana, and the Go backend. Nginx publishes `80` and `443`; the other services stay private inside the Docker network.
+The stack starts Nginx, VictoriaMetrics, Grafana, the Go backend, and the Solid frontend. Nginx publishes `80` and `443`; the other services stay private inside the Docker network.
 
 Grafana provisions:
 

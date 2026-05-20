@@ -24,6 +24,7 @@ This repo has four moving pieces:
 - [Operations](operations.md)
 - [Security](security.md)
 - [Development](development.md)
+- [Plan Alignment](status.md)
 
 ## Current Milestones
 

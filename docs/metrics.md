@@ -8,6 +8,8 @@ http://airgradient_xxx.local/metrics
 
 The exact metric names can vary by firmware or exporter. The names below are current defaults.
 
+These defaults were aligned with the public Grafana dashboard for AirGradient ONE firmware 3.1.4 and AirGradient's current model documentation.
+
 | Key | Default query | Unit | Notes |
 |---|---|---|---|
 | `co2` | `airgradient_co2_ppm` | `ppm` | Main ventilation signal |
@@ -57,3 +59,9 @@ METRIC_PM25=actual_pm25_metric_name
 ```
 
 Then update Grafana dashboard queries to match.
+
+## Research Notes
+
+AirGradient ONE Generation 9 measures PM, CO2, TVOC, NOx, temperature, and humidity. AirGradient's public Grafana dashboard for Prometheus uses metric names such as `airgradient_co2_ppm`, `airgradient_pm2d5_ugm3`, `airgradient_temperature_degc`, `airgradient_humidity_percent`, `airgradient_tvoc_index`, and `airgradient_nox_index`.
+
+AirGradient's air quality cheat sheet treats CO2 below `801 ppm` as excellent and `1501 ppm` as a level to avoid. It also notes that NOx from AirGradient sensors is an index, not an absolute NOx concentration.

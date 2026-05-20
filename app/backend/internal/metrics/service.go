@@ -239,7 +239,7 @@ func (s *Service) queryContext(ctx context.Context) (context.Context, context.Ca
 
 func (s *Service) withFilter(query string) string {
 	filter := strings.TrimSpace(s.labelFilter)
-	if filter == "" || strings.Contains(query, "{") {
+	if filter == "" || strings.Contains(query, "{") || !metricNamePattern.MatchString(query) {
 		return query
 	}
 	return query + filter
@@ -260,6 +260,7 @@ func statusFor(value *float64, definition Definition) string {
 
 var windowPattern = regexp.MustCompile(`^\d+[hd]$`)
 var stepPattern = regexp.MustCompile(`^\d+[smh]$`)
+var metricNamePattern = regexp.MustCompile(`^[a-zA-Z_:][a-zA-Z0-9_:]*$`)
 
 func isValidWindow(value string) bool {
 	return windowPattern.MatchString(value)

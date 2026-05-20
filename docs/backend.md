@@ -17,6 +17,7 @@ The default address is `:8080`.
 
 ```http
 GET /healthz
+GET /api/healthz
 GET /api/metrics/current
 GET /api/metrics/range?metric=co2&range=24h&step=60s
 ```

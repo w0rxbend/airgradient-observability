@@ -83,7 +83,7 @@ Then update both:
 Current threshold defaults:
 
 - CO2: acceptable starts at `801`, critical starts at `1501`
-- PM2.5: warning at `5`, critical at `12`
+- PM2.5: warning at `12`, critical at `35`
 - TVOC index: warning at `100`, critical at `300`
 - NOx: warning at `100`, critical at `300`
 - humidity: warning at `60`, critical at `70`

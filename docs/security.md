@@ -28,6 +28,7 @@ The first deployment uses reverse proxy Basic Auth.
 Use it for:
 
 - vmagent remote write
+- Go backend API at `/api/`
 - Grafana
 - direct VictoriaMetrics debug paths
 

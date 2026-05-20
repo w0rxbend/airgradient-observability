@@ -31,6 +31,7 @@ The compose stack starts:
 - `victoriametrics`
 - `grafana`
 - `backend`
+- `frontend`
 - `nginx`
 
 Only Nginx publishes host ports:
@@ -39,6 +40,7 @@ Only Nginx publishes host ports:
 - VictoriaMetrics: `8428` inside the Docker network
 - Grafana: `3000` inside the Docker network
 - Go backend: `8080` inside the Docker network
+- Solid frontend: `3000` inside the Docker network
 
 ## Go Backend
 
@@ -66,6 +68,8 @@ METRIC_NOX=airgradient_nox_index
 METRIC_TEMPERATURE=airgradient_temperature_degc
 METRIC_HUMIDITY=airgradient_humidity_percent
 ```
+
+`METRIC_*` values are intended to be simple metric names. If you set a full PromQL expression, the backend will not append `AIRGRADIENT_LABEL_FILTER` to it.
 
 The root `.env.example` shows all variables in one place for discovery. In practice, keep edge, backend, and frontend env files separate so similarly named secrets do not get mixed accidentally.
 

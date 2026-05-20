@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: airgradient_one
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - airgradient_xxx.local:80
+        labels:
+          location: home
+          device: airgradient_one

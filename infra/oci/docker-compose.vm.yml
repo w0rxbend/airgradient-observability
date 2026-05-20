@@ -1,0 +1,66 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+    command: >
+      /bin/sh -c "envsubst '$$DOMAIN' < /etc/nginx/templates/nginx.conf.template
+      > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/templates/nginx.conf.template:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+    depends_on:
+      - victoriametrics
+      - grafana
+      - backend
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    restart: unless-stopped
+    volumes:
+      - vmdata:/victoria-metrics-data
+    command:
+      - -storageDataPath=/victoria-metrics-data
+      - -retentionPeriod=12
+    expose:
+      - "8428"
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      GF_SERVER_ROOT_URL: https://${DOMAIN:?set DOMAIN}/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    expose:
+      - "3000"
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
+      - ../../dashboards:/var/lib/grafana/dashboards:ro
+
+  backend:
+    build:
+      context: ../../app/backend
+    restart: unless-stopped
+    environment:
+      ADDR: :8080
+      VM_URL: http://victoriametrics:8428
+      AIRGRADIENT_LABEL_FILTER: '{device="airgradient_one"}'
+      CACHE_TTL: 10s
+      RANGE_CACHE_TTL: 30s
+      VM_QUERY_TIMEOUT: 10s
+      ALLOWED_ORIGIN: https://${DOMAIN:?set DOMAIN}
+    expose:
+      - "8080"
+    depends_on:
+      - victoriametrics
+
+volumes:
+  vmdata:
+  grafanadata:

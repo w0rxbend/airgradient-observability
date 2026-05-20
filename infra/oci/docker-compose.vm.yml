@@ -18,6 +18,7 @@ services:
       - victoriametrics
       - grafana
       - backend
+      - frontend
 
   victoriametrics:
     image: victoriametrics/victoria-metrics:latest
@@ -60,6 +61,17 @@ services:
       - "8080"
     depends_on:
       - victoriametrics
+
+  frontend:
+    build:
+      context: ../../app/frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8080
+    expose:
+      - "3000"
+    depends_on:
+      - backend
 
 volumes:
   vmdata:

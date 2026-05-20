@@ -108,6 +108,7 @@ func (s *Service) Current(ctx context.Context) (CurrentResponse, error) {
 }
 
 func (s *Service) loadCurrent(ctx context.Context) (CurrentResponse, error) {
+	const key = "current"
 	response := CurrentResponse{Metrics: []CurrentMetric{}}
 	for _, definition := range Definitions() {
 		value, timestamp, err := s.instant(ctx, s.withFilter(definition.Query))
@@ -166,6 +167,7 @@ func (s *Service) Range(ctx context.Context, key MetricKey, window string, step 
 }
 
 func (s *Service) loadRange(ctx context.Context, definition Definition, window string, step string) (RangeResponse, error) {
+	cacheKey := fmt.Sprintf("%s:%s:%s", definition.Key, window, step)
 	end := time.Now()
 	start := end.Add(-parseWindow(window))
 	queryCtx, cancel := s.queryContext(ctx)

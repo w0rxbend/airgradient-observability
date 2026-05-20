@@ -8,7 +8,12 @@ http://airgradient_xxx.local/metrics
 
 The exact metric names can vary by firmware or exporter. The names below are current defaults.
 
-These defaults were aligned with the public Grafana dashboard for AirGradient ONE firmware 3.1.4 and AirGradient's current model documentation.
+These defaults were aligned with the public Grafana dashboard for AirGradient ONE firmware 3.1.4 and AirGradient's current model documentation:
+
+- https://grafana.com/grafana/dashboards/20658-airgradient-new/
+- https://www.airgradient.com/documentation/one-v9
+- https://www.airgradient.com/airgradient-one/
+- https://www.airgradient.com/blog/airgradient-calibration-and-data-processing
 
 | Key | Default query | Unit | Notes |
 |---|---|---|---|

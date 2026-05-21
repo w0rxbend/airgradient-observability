@@ -19,10 +19,11 @@ import (
 )
 
 var (
-	ErrInvalidMetric  = errors.New("invalid metric")
-	ErrInvalidRange   = errors.New("invalid range")
-	ErrInvalidStep    = errors.New("invalid step")
-	ErrMultipleSeries = errors.New("query returned multiple series")
+	ErrInvalidMetric    = errors.New("invalid metric")
+	ErrInvalidRange     = errors.New("invalid range")
+	ErrInvalidStep      = errors.New("invalid step")
+	ErrInvalidTimeRange = errors.New("invalid time range")
+	ErrMultipleSeries   = errors.New("query returned multiple series")
 )
 
 type CurrentMetric struct {
@@ -200,6 +201,76 @@ func (s *Service) loadRange(ctx context.Context, definition Definition, window s
 		Label:  definition.Label,
 		Unit:   definition.Unit,
 		Range:  window,
+		Step:   step,
+		Points: points,
+	}
+	s.rangeCache.Set(cacheKey, response, s.rangeTTL)
+	return response, nil
+}
+
+func (s *Service) RangeAbsolute(ctx context.Context, key MetricKey, fromMs int64, toMs int64, step string) (RangeResponse, error) {
+	definition, ok := DefinitionByKey(key)
+	if !ok {
+		return RangeResponse{}, fmt.Errorf("%w: %s", ErrInvalidMetric, key)
+	}
+
+	if !isValidStep(step) {
+		return RangeResponse{}, fmt.Errorf("%w: %s", ErrInvalidStep, step)
+	}
+
+	if fromMs >= toMs {
+		return RangeResponse{}, fmt.Errorf("%w: from must be less than to", ErrInvalidTimeRange)
+	}
+
+	cacheKey := fmt.Sprintf("abs:%s:%d:%d:%s", definition.Key, fromMs, toMs, step)
+	if value, ok := s.rangeCache.Get(cacheKey); ok {
+		value.Cached = true
+		return value, nil
+	}
+
+	loaded, err, _ := s.group.Do("range:"+cacheKey, func() (interface{}, error) {
+		return s.loadRangeAbsolute(ctx, definition, fromMs, toMs, step)
+	})
+	if err != nil {
+		return RangeResponse{}, err
+	}
+	return loaded.(RangeResponse), nil
+}
+
+func (s *Service) loadRangeAbsolute(ctx context.Context, definition Definition, fromMs int64, toMs int64, step string) (RangeResponse, error) {
+	cacheKey := fmt.Sprintf("abs:%s:%d:%d:%s", definition.Key, fromMs, toMs, step)
+	start := time.UnixMilli(fromMs)
+	end := time.UnixMilli(toMs)
+	queryCtx, cancel := s.queryContext(ctx)
+	defer cancel()
+
+	values, warnings, err := s.api.QueryRange(queryCtx, s.withFilter(definition.Query), v1.Range{
+		Start: start,
+		End:   end,
+		Step:  parseStep(step),
+	})
+	if err != nil {
+		return RangeResponse{}, err
+	}
+	if len(warnings) > 0 {
+		return RangeResponse{}, fmt.Errorf("victoriametrics warning: %s", strings.Join(warnings, "; "))
+	}
+
+	points := []RangePoint{}
+	if matrix, ok := values.(model.Matrix); ok && len(matrix) > 0 {
+		if len(matrix) > 1 {
+			return RangeResponse{}, ErrMultipleSeries
+		}
+		for _, sample := range matrix[0].Values {
+			points = append(points, RangePoint{float64(sample.Timestamp), float64(sample.Value)})
+		}
+	}
+
+	response := RangeResponse{
+		Metric: string(definition.Key),
+		Label:  definition.Label,
+		Unit:   definition.Unit,
+		Range:  fmt.Sprintf("%d-%d", fromMs, toMs),
 		Step:   step,
 		Points: points,
 	}

@@ -1,0 +1,18 @@
+{
+  "enabledPlugins": {
+    "api-authentication@claude-skills": true,
+    "api-contract-testing@claude-skills": true,
+    "api-design-principles@claude-skills": true,
+    "api-error-handling@claude-skills": true,
+    "api-filtering-sorting@claude-skills": true,
+    "api-pagination@claude-skills": true,
+    "api-rate-limiting@claude-skills": true,
+    "api-response-optimization@claude-skills": true,
+    "api-security-hardening@claude-skills": true,
+    "architecture-patterns@claude-skills": true,
+    "access-control-rbac@claude-skills": true,
+    "zod@claude-skills": true,
+    "feature-dev@claude-skills": true,
+    "inspira-ui@claude-skills": true
+  }
+}

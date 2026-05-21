@@ -8,13 +8,18 @@ export default function App() {
       root={(props) => (
         <main class="shell">
           <header class="topbar">
-            <div>
-              <p class="eyebrow">AirGradient ONE</p>
-              <h1>Home air observability</h1>
+            <div class="topbar-brand">
+              <div class="topbar-icon" aria-hidden="true">🌿</div>
+              <div>
+                <div class="topbar-title">AirGradient</div>
+                <div class="topbar-subtitle">Indoor air quality observability</div>
+              </div>
             </div>
-            <a href="/api/healthz" class="api-link">
-              Backend
-            </a>
+            <div class="topbar-actions">
+              <a href="/api/healthz" class="api-link" aria-label="Backend health check">
+                Backend status
+              </a>
+            </div>
           </header>
           {props.children}
         </main>

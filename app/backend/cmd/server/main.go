@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -60,6 +61,45 @@ func main() {
 		)
 		if err != nil {
 			if errors.Is(err, metrics.ErrInvalidMetric) || errors.Is(err, metrics.ErrInvalidRange) || errors.Is(err, metrics.ErrInvalidStep) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				c.JSON(http.StatusGatewayTimeout, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, payload)
+	})
+
+	api.GET("/range-absolute", func(c *gin.Context) {
+		fromStr := c.Query("from")
+		toStr := c.Query("to")
+		if fromStr == "" || toStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "from and to parameters are required"})
+			return
+		}
+		fromMs, err := strconv.ParseInt(fromStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "from must be a Unix millisecond timestamp"})
+			return
+		}
+		toMs, err := strconv.ParseInt(toStr, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "to must be a Unix millisecond timestamp"})
+			return
+		}
+		payload, err := service.RangeAbsolute(
+			c.Request.Context(),
+			metrics.MetricKey(c.DefaultQuery("metric", "co2")),
+			fromMs,
+			toMs,
+			c.DefaultQuery("step", "5m"),
+		)
+		if err != nil {
+			if errors.Is(err, metrics.ErrInvalidMetric) || errors.Is(err, metrics.ErrInvalidStep) || errors.Is(err, metrics.ErrInvalidTimeRange) {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 				return
 			}

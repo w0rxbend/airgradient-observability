@@ -5,6 +5,7 @@ import {
   For,
   Match,
   Show,
+  Suspense,
   Switch
 } from "solid-js";
 import { GaugeMetric } from "../components/GaugeMetric";
@@ -12,89 +13,88 @@ import { RangeSelector } from "../components/RangeSelector";
 import type { RangeKey } from "../components/RangeSelector";
 import { TimeSeriesChart } from "../components/TimeSeriesChart";
 import { AirQualityScore } from "../components/AirQualityScore";
-import { CalendarPicker } from "../components/CalendarPicker";
+import { AirQualityHeatmap } from "../components/AirQualityHeatmap";
 import { GaugeSkeleton, ChartSkeleton } from "../components/LoadingSkeleton";
-import type { MetricKey } from "../lib/metrics";
-import { fetchCurrent, fetchRange, fetchRangeAbsolute } from "../lib/backend";
-import { statusColor } from "../lib/thresholds";
-import type { Status } from "../lib/thresholds";
+import {
+  fetchCurrent,
+  fetchAllRanges,
+  fetchAllRangesAbsolute,
+  fetchDailyScores
+} from "../lib/backend";
 
-const METRIC_OPTIONS: Array<{ key: MetricKey; label: string }> = [
-  { key: "co2", label: "CO₂" },
-  { key: "pm25", label: "PM2.5" },
-  { key: "voc", label: "VOC" },
-  { key: "nox", label: "NOx" },
-  { key: "temperature", label: "Temp" },
-  { key: "humidity", label: "Humidity" }
+// Color palette — one per metric, in definition order
+const METRIC_COLORS = [
+  "var(--c-info)",    // co2
+  "#f59e0b",          // pm25
+  "#a78bfa",          // voc
+  "#fb923c",          // nox
+  "#f43f5e",          // temperature
+  "#60a5fa",          // humidity
 ];
 
 export default function Dashboard() {
   const [range, setRange] = createSignal<RangeKey>("24h");
-  const [metric, setMetric] = createSignal<MetricKey>("co2");
   const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
-  const [showCalendar, setShowCalendar] = createSignal(false);
 
   const isHistorical = createMemo(() => selectedDate() !== null);
 
+  // ── live current readings (gauges) ──────────────────────────────
   const [current] = createResource(fetchCurrent);
 
-  // Historical date window: midnight → midnight local
+  // ── date window for absolute queries ────────────────────────────
   const dateWindow = createMemo(() => {
     const d = selectedDate();
     if (!d) return null;
-    const from = new Date(d);
-    from.setHours(0, 0, 0, 0);
-    const to = new Date(d);
-    to.setHours(23, 59, 59, 999);
+    const from = new Date(d); from.setHours(0, 0, 0, 0);
+    const to   = new Date(d); to.setHours(23, 59, 59, 999);
     return { from: from.getTime(), to: to.getTime() };
   });
 
-  const [history] = createResource(
+  // ── all 6 metric time-series ─────────────────────────────────────
+  const [allHistory] = createResource(
     () => {
       const w = dateWindow();
-      if (w) {
-        return { type: "absolute" as const, metric: metric(), from: w.from, to: w.to };
-      }
-      return { type: "relative" as const, metric: metric(), range: range() };
+      return w
+        ? { type: "absolute" as const, from: w.from, to: w.to }
+        : { type: "relative" as const, range: range() };
     },
-    async (params) => {
-      if (params.type === "absolute") {
-        return fetchRangeAbsolute(params.metric, params.from, params.to);
-      }
-      return fetchRange(params.metric, params.range);
-    }
+    (params) =>
+      params.type === "absolute"
+        ? fetchAllRangesAbsolute(params.from, params.to)
+        : fetchAllRanges(params.range)
   );
 
+  // ── heatmap daily scores ─────────────────────────────────────────
+  const [dailyScores] = createResource(fetchDailyScores);
+
+  // ── derived helpers ──────────────────────────────────────────────
   const lastSeen = createMemo(() => {
     const ts = current()?.timestamp;
-    if (!ts) return "No data";
+    if (!ts) return "—";
     const diff = Date.now() - ts;
     if (diff < 120_000) return "just now";
-    if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   });
 
-  const activeMetricColor = createMemo(() => {
-    const metrics = current()?.metrics ?? [];
-    const m = metrics.find(x => x.key === metric());
-    return m ? statusColor(m.status as Status) : "var(--c-info)";
-  });
-
-  const selectedDateLabel = createMemo(() => {
+  const selectedLabel = createMemo(() => {
     const d = selectedDate();
     if (!d) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (d.getTime() === today.getTime()) return "Today";
+    const today     = new Date(); today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    if (d.getTime() === today.getTime())     return "Today";
     if (d.getTime() === yesterday.getTime()) return "Yesterday";
     return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
   });
 
+  function handleHeatmapSelect(date: Date | null) {
+    setSelectedDate(date);
+  }
+
   return (
     <div class="dashboard">
-      {/* Status strip */}
+
+      {/* ── Status bar ─────────────────────────────────────────── */}
       <div class="glass-card">
         <div class="status-strip">
           <div>
@@ -109,127 +109,141 @@ export default function Dashboard() {
               {current.loading
                 ? "Connecting…"
                 : current.error
-                ? "Error loading data"
-                : `Updated ${lastSeen()}`}
+                  ? "Cannot reach backend"
+                  : `Updated ${lastSeen()}`}
               {current()?.cached ? " · cached" : ""}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Air quality score */}
-      <Switch>
-        <Match when={current.loading}>
+      {/* ── AQ score + heatmap row ──────────────────────────────── */}
+      <div style={{ display: "grid", "grid-template-columns": "260px 1fr", gap: "12px", "align-items": "stretch" }}>
+        {/* AQ score */}
+        <Switch>
+          <Match when={current.loading}>
+            <div class="glass-card">
+              <div class="skeleton" style={{ height: "160px", margin: "16px", "border-radius": "10px" }} />
+            </div>
+          </Match>
+          <Match when={current.error}>
+            <div class="error-box" style={{ "min-height": "160px" }}>
+              Backend unavailable.<br />
+              Start the mock server:<br />
+              <code>cd app/mock-server &amp;&amp; go run .</code>
+            </div>
+          </Match>
+          <Match when={current()}>
+            <div class="glass-card">
+              <AirQualityScore metrics={current()!.metrics} />
+            </div>
+          </Match>
+        </Switch>
+
+        {/* Heatmap */}
+        <Suspense fallback={
           <div class="glass-card">
             <div class="skeleton" style={{ height: "120px", margin: "16px", "border-radius": "10px" }} />
           </div>
-        </Match>
-        <Match when={current.error}>
-          <div class="error-box">{String(current.error)}</div>
-        </Match>
-        <Match when={current()}>
-          <div class="glass-card">
-            <AirQualityScore metrics={current()!.metrics} />
-          </div>
-        </Match>
-      </Switch>
+        }>
+          <AirQualityHeatmap
+            scores={dailyScores() ?? []}
+            selected={selectedDate()}
+            onSelect={handleHeatmapSelect}
+          />
+        </Suspense>
+      </div>
 
-      {/* Gauge grid */}
-      <Switch>
-        <Match when={current.loading}>
-          <GaugeSkeleton count={6} />
-        </Match>
-        <Match when={current.error}>
-          <div class="error-box">Could not load sensor metrics: {String(current.error)}</div>
-        </Match>
-        <Match when={current()}>
-          <section class="metric-grid" aria-label="Current sensor readings">
-            <For each={current()!.metrics}>
-              {(item) => <GaugeMetric metric={item} />}
-            </For>
-          </section>
-        </Match>
-      </Switch>
+      {/* ── 6 Gauge cards ──────────────────────────────────────── */}
+      <div>
+        <div class="section-header" style={{ "margin-bottom": "10px" }}>
+          <span class="section-title">Live readings</span>
+          <Show when={isHistorical()}>
+            <span class="mode-toggle">
+              Viewing historical data for <span class="mode-label">{selectedLabel()}</span>
+              <button
+                type="button"
+                class="icon-btn"
+                style={{ "margin-left": "8px" }}
+                onClick={() => setSelectedDate(null)}
+              >
+                ↺ Live
+              </button>
+            </span>
+          </Show>
+        </div>
 
-      {/* Chart controls */}
-      <div class="glass-card" style={{ padding: "16px 18px" }}>
+        <Switch>
+          <Match when={current.loading}>
+            <GaugeSkeleton count={6} />
+          </Match>
+          <Match when={current.error}>
+            <div class="error-box">Could not load sensor readings.</div>
+          </Match>
+          <Match when={current()}>
+            <section class="metric-grid" aria-label="Current sensor readings">
+              <For each={current()!.metrics}>
+                {(item) => <GaugeMetric metric={item} />}
+              </For>
+            </section>
+          </Match>
+        </Switch>
+      </div>
+
+      {/* ── Chart controls ─────────────────────────────────────── */}
+      <div class="glass-card" style={{ padding: "14px 18px" }}>
         <div class="controls-row">
           <div class="controls-left">
-            {/* Metric tabs */}
-            <div class="segmented" role="group" aria-label="Metric to chart">
-              <For each={METRIC_OPTIONS}>
-                {(opt) => (
-                  <button
-                    type="button"
-                    class={metric() === opt.key ? "active" : ""}
-                    aria-pressed={metric() === opt.key}
-                    onClick={() => setMetric(opt.key)}
-                  >
-                    {opt.label}
-                  </button>
-                )}
-              </For>
-            </div>
+            <span class="section-title">
+              {isHistorical() ? `Trends — ${selectedLabel()}` : "Trends"}
+            </span>
           </div>
-
           <div class="controls-right">
-            {/* Live range selector — hidden in historical mode */}
+            <Show when={isHistorical()}>
+              <button
+                type="button"
+                class="icon-btn"
+                onClick={() => setSelectedDate(null)}
+                aria-label="Return to live view"
+              >
+                ↺ Back to live
+              </button>
+            </Show>
             <Show when={!isHistorical()}>
               <RangeSelector value={range()} onChange={setRange} />
             </Show>
-
-            {/* Historical mode indicator */}
-            <Show when={isHistorical()}>
-              <span class="mode-toggle">
-                <span>Viewing:</span>
-                <span class="mode-label">{selectedDateLabel()}</span>
-              </span>
-            </Show>
-
-            {/* Calendar toggle */}
-            <button
-              type="button"
-              class={`icon-btn ${showCalendar() ? "active" : ""}`}
-              onClick={() => setShowCalendar(s => !s)}
-              aria-expanded={showCalendar()}
-              aria-label="Toggle calendar date picker"
-            >
-              📅 {isHistorical() ? selectedDateLabel() : "History"}
-            </button>
           </div>
         </div>
-
-        {/* Calendar drawer */}
-        <Show when={showCalendar()}>
-          <div style={{ "margin-top": "16px", "border-top": "1px solid var(--border-subtle)", "padding-top": "16px" }}>
-            <CalendarPicker
-              selected={selectedDate()}
-              onSelect={(d) => {
-                setSelectedDate(d);
-                if (!d) setShowCalendar(false);
-              }}
-            />
-          </div>
-        </Show>
       </div>
 
-      {/* Time series chart */}
+      {/* ── 6 Charts ───────────────────────────────────────────── */}
       <Switch>
-        <Match when={history.loading}>
-          <ChartSkeleton />
+        <Match when={allHistory.loading}>
+          <div class="chart-grid">
+            <For each={Array.from({ length: 6 })}>
+              {() => <ChartSkeleton />}
+            </For>
+          </div>
         </Match>
-        <Match when={history.error}>
-          <div class="error-box">Could not load chart data: {String(history.error)}</div>
+        <Match when={allHistory.error}>
+          <div class="error-box">Could not load chart data: {String(allHistory.error)}</div>
         </Match>
-        <Match when={history()}>
-          <TimeSeriesChart
-            label={history()!.label}
-            unit={history()!.unit}
-            points={history()!.points}
-            color={activeMetricColor()}
-          />
+        <Match when={allHistory()}>
+          <div class="chart-grid">
+            <For each={allHistory()!}>
+              {(resp, i) => (
+                <TimeSeriesChart
+                  label={resp.label}
+                  unit={resp.unit}
+                  points={resp.points}
+                  color={METRIC_COLORS[i()]}
+                />
+              )}
+            </For>
+          </div>
         </Match>
       </Switch>
+
     </div>
   );
 }

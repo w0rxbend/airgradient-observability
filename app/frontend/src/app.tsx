@@ -1,5 +1,6 @@
-import { Router } from "@solidjs/router";
+import { Route, Router } from "@solidjs/router";
 import { FileRoutes } from "@solidjs/start/router";
+import Dashboard from "./routes";
 import "./global.css";
 
 export default function App() {

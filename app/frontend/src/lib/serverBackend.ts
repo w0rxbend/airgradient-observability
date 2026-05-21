@@ -1,4 +1,4 @@
-const defaultBackendUrl = "http://localhost:8080";
+const defaultBackendUrl = "http://localhost:8081";
 
 export function backendUrl() {
   return (process.env.BACKEND_URL || defaultBackendUrl).replace(/\/$/, "");

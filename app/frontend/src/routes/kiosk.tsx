@@ -10,6 +10,7 @@ import {
 } from "solid-js";
 import { GaugeMetric } from "../components/GaugeMetric";
 import { TimeSeriesChart } from "../components/TimeSeriesChart";
+import type { ChartType } from "../components/TimeSeriesChart";
 import { GaugeSkeleton, ChartSkeleton } from "../components/LoadingSkeleton";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { fetchCurrent, fetchAllRanges } from "../lib/backend";
@@ -24,6 +25,7 @@ const METRIC_COLORS = [
 ];
 
 const REFRESH_MS = 5_000;
+const CHART_TYPES: ChartType[] = ["line", "bar", "histogram"];
 
 export default function Kiosk() {
   return <KioskView />;
@@ -31,6 +33,7 @@ export default function Kiosk() {
 
 export function KioskView(props: { oled?: boolean }) {
   const [tick, setTick] = createSignal(0);
+  const chartTypes = Array.from({ length: METRIC_COLORS.length }, randomChartType);
 
   const timer = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
   onCleanup(() => clearInterval(timer));
@@ -98,6 +101,7 @@ export function KioskView(props: { oled?: boolean }) {
                   unit={resp.unit}
                   points={resp.points}
                   color={METRIC_COLORS[i()]}
+                  initialType={chartTypes[i()]}
                 />
               )}
             </For>
@@ -129,4 +133,8 @@ export function KioskView(props: { oled?: boolean }) {
       </footer>
     </div>
   );
+}
+
+function randomChartType(): ChartType {
+  return CHART_TYPES[Math.floor(Math.random() * CHART_TYPES.length)];
 }

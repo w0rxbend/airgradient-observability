@@ -1,13 +1,14 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import type { RangePoint } from "../lib/backend";
 
-type ChartType = "line" | "bar" | "histogram";
+export type ChartType = "line" | "bar" | "histogram";
 
 type Props = {
   label: string;
   unit: string;
   points: RangePoint[];
   color?: string;
+  initialType?: ChartType;
 };
 
 const W = 900;
@@ -23,7 +24,7 @@ const TICKS_X = 6;
 const N_BINS = 16;
 
 export function TimeSeriesChart(props: Props) {
-  const [chartType, setChartType] = createSignal<ChartType>("line");
+  const [chartType, setChartType] = createSignal<ChartType>(props.initialType ?? "line");
   const [cursor, setCursor] = createSignal<{ x: number; idx: number } | null>(null);
   const [histCursor, setHistCursor] = createSignal<number | null>(null);
   const [tooltipSide, setTooltipSide] = createSignal<"left" | "right">("right");

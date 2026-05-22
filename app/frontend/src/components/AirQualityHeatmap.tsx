@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import type { DailyScore } from "../lib/backend";
 import { toDateStr } from "../lib/backend";
 
@@ -6,38 +6,60 @@ type Props = {
   scores: DailyScore[];
   selected: Date | null;
   onSelect: (date: Date | null) => void;
-  weeks?: number;
 };
 
 type Cell = {
   date: Date;
   dateStr: string;
-  dow: number;     // 0 = Mon … 6 = Sun
-  weekIdx: number; // column index
+  dow: number;
+  weekIdx: number;
   isFuture: boolean;
+  isToday: boolean;
 };
 
-const DOW_LABELS = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
-const CELL = 13; // px
-const GAP  = 3;  // px
+type TooltipState = {
+  dateLabel: string;
+  score: number | null;
+  status: string | null;
+  x: number;
+  y: number;
+};
+
+const DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const CELL = 22;
+const GAP  = 4;
 const STEP = CELL + GAP;
+const DOW_COL_PX = 36;
 
 export function AirQualityHeatmap(props: Props) {
-  const weeksToShow = () => props.weeks ?? 14;
+  let scrollRef: HTMLDivElement | undefined;
   let wrapRef: HTMLDivElement | undefined;
 
-  const [tooltip, setTooltip] = createSignal<{
-    text: string; x: number; y: number;
-  } | null>(null);
+  const [availableWidth, setAvailableWidth] = createSignal(0);
+  const [tooltip, setTooltip] = createSignal<TooltipState | null>(null);
 
-  // Build grid cells (oldest Mon → newest Sun)
+  onMount(() => {
+    if (!scrollRef) return;
+    setAvailableWidth(scrollRef.clientWidth);
+    const ro = new ResizeObserver((entries) => {
+      setAvailableWidth(entries[0].contentRect.width);
+    });
+    ro.observe(scrollRef);
+    onCleanup(() => ro.disconnect());
+  });
+
+  const weeksToShow = createMemo(() => {
+    const w = availableWidth();
+    if (w <= 0) return 14;
+    return Math.max(4, Math.floor((w - DOW_COL_PX) / STEP));
+  });
+
   const cells = createMemo<Cell[]>(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    // Mon-first DOW: Sun(0)→6, Mon(1)→0, …
-    const todayDow = ((today.getDay() + 6) % 7);
+    const todayStr = toDateStr(today);
+    const todayDow = (today.getDay() + 6) % 7;
     const gridStart = new Date(today);
-    // rewind to the Monday of the oldest week
     gridStart.setDate(today.getDate() - todayDow - (weeksToShow() - 1) * 7);
 
     const list: Cell[] = [];
@@ -45,26 +67,26 @@ export function AirQualityHeatmap(props: Props) {
       for (let dow = 0; dow < 7; dow++) {
         const d = new Date(gridStart);
         d.setDate(gridStart.getDate() + wi * 7 + dow);
+        const ds = toDateStr(d);
         list.push({
           date: d,
-          dateStr: toDateStr(d),
+          dateStr: ds,
           dow,
           weekIdx: wi,
           isFuture: d > today,
+          isToday: ds === todayStr,
         });
       }
     }
     return list;
   });
 
-  // Score lookup map
   const scoreMap = createMemo(() => {
     const m = new Map<string, DailyScore>();
     for (const s of props.scores) m.set(s.dateStr, s);
     return m;
   });
 
-  // Month label positions
   const monthLabels = createMemo(() => {
     const seen = new Set<string>();
     const labels: Array<{ month: string; x: number }> = [];
@@ -74,7 +96,10 @@ export function AirQualityHeatmap(props: Props) {
       if (!seen.has(key)) {
         seen.add(key);
         labels.push({
-          month: cell.date.toLocaleDateString([], { month: "short", year: cell.weekIdx < 2 ? "numeric" : undefined }),
+          month: cell.date.toLocaleDateString([], {
+            month: "short",
+            year: cell.weekIdx < 2 ? "numeric" : undefined,
+          }),
           x: cell.weekIdx * STEP,
         });
       }
@@ -82,30 +107,38 @@ export function AirQualityHeatmap(props: Props) {
     return labels;
   });
 
-  const isSelected = (dateStr: string) => {
-    if (!props.selected) return false;
-    return toDateStr(props.selected) === dateStr;
-  };
+  const stats = createMemo(() => {
+    const s = props.scores;
+    if (s.length === 0) return null;
+    const avg = Math.round(s.reduce((a, b) => a + b.score, 0) / s.length);
+    return { count: s.length, avg };
+  });
+
+  const isSelected = (ds: string) =>
+    props.selected ? toDateStr(props.selected) === ds : false;
 
   function handleClick(cell: Cell) {
     if (cell.isFuture) return;
-    const alreadySelected = isSelected(cell.dateStr);
-    props.onSelect(alreadySelected ? null : cell.date);
+    props.onSelect(isSelected(cell.dateStr) ? null : cell.date);
     setTooltip(null);
   }
 
   function handleEnter(e: MouseEvent, cell: Cell) {
     if (cell.isFuture || !wrapRef) return;
-    const score = scoreMap().get(cell.dateStr);
-    const label = cell.date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
-    const scoreText = score ? `${score.score}/100` : "No data";
+    const entry = scoreMap().get(cell.dateStr);
     const cellEl = e.currentTarget as HTMLElement;
     const cr = cellEl.getBoundingClientRect();
     const wr = wrapRef.getBoundingClientRect();
     setTooltip({
-      text: `${label} — AQ ${scoreText}`,
+      dateLabel: cell.date.toLocaleDateString([], {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }),
+      score: entry?.score ?? null,
+      status: entry?.status ?? null,
       x: cr.left - wr.left + CELL / 2,
-      y: cr.top  - wr.top  - 6,
+      y: cr.top - wr.top - 8,
     });
   }
 
@@ -114,24 +147,39 @@ export function AirQualityHeatmap(props: Props) {
 
   return (
     <div class="heatmap-wrap glass-card">
+      {/* ── Header ─────────────────────────────────────────────── */}
       <div class="heatmap-header">
-        <div>
+        <div class="heatmap-header-left">
           <p class="heatmap-eyebrow">Air quality history</p>
-          <p class="heatmap-subtitle">Click a day to view detailed data</p>
+          <div class="heatmap-header-meta">
+            <Show when={stats()} fallback={<span class="heatmap-subtitle">Click a day to view details</span>}>
+              <span class="heatmap-subtitle">
+                <span class="heatmap-stat">{stats()!.count}</span> days tracked
+                {" · "}avg score{" "}
+                <span
+                  class="heatmap-stat"
+                  style={{ color: scoreToColor(stats()!.avg) }}
+                >
+                  {stats()!.avg}
+                </span>
+              </span>
+            </Show>
+          </div>
         </div>
         <HeatmapLegend />
       </div>
 
-      <div class="heatmap-scroll">
+      {/* ── Grid ───────────────────────────────────────────────── */}
+      <div class="heatmap-scroll" ref={scrollRef}>
         <div class="heatmap-layout">
-          {/* Day-of-week labels */}
-          <div
-            class="heatmap-dow-col"
-            style={{ height: `${gridHeight}px` }}
-          >
+          {/* DOW labels */}
+          <div class="heatmap-dow-col" style={{ height: `${gridHeight}px` }}>
             <For each={DOW_LABELS}>
               {(label) => (
-                <div class="heatmap-dow-label" style={{ height: `${CELL}px`, "margin-bottom": `${GAP}px` }}>
+                <div
+                  class="heatmap-dow-label"
+                  style={{ height: `${CELL}px`, "margin-bottom": `${GAP}px` }}
+                >
                   {label}
                 </div>
               )}
@@ -139,15 +187,12 @@ export function AirQualityHeatmap(props: Props) {
           </div>
 
           {/* Grid area */}
-          <div style={{ position: "relative" }} ref={wrapRef}>
+          <div style={{ position: "relative", flex: "1 1 0" }} ref={wrapRef}>
             {/* Month labels */}
             <div class="heatmap-months" style={{ width: `${gridWidth()}px` }}>
               <For each={monthLabels()}>
                 {(lbl) => (
-                  <span
-                    class="heatmap-month-label"
-                    style={{ left: `${lbl.x}px` }}
-                  >
+                  <span class="heatmap-month-label" style={{ left: `${lbl.x}px` }}>
                     {lbl.month}
                   </span>
                 )}
@@ -163,6 +208,7 @@ export function AirQualityHeatmap(props: Props) {
                 "grid-auto-flow": "column",
                 "grid-auto-columns": `${CELL}px`,
                 gap: `${GAP}px`,
+                width: `${gridWidth()}px`,
               }}
               onMouseLeave={() => setTooltip(null)}
               aria-label="Air quality calendar"
@@ -170,23 +216,32 @@ export function AirQualityHeatmap(props: Props) {
             >
               <For each={cells()}>
                 {(cell) => {
-                  const score = () => scoreMap().get(cell.dateStr);
+                  const entry = () => scoreMap().get(cell.dateStr);
+                  const cellColor = () =>
+                    cell.isFuture
+                      ? "rgba(255,255,255,0.025)"
+                      : scoreToColor(entry()?.score ?? -1);
+
                   return (
                     <div
                       role="gridcell"
                       class={[
                         "heatmap-cell",
-                        cell.isFuture ? "future" : "",
+                        cell.isToday ? "today" : "",
                         isSelected(cell.dateStr) ? "selected" : "",
-                      ].filter(Boolean).join(" ")}
+                        cell.isFuture ? "future" : "",
+                        !entry() && !cell.isFuture ? "empty" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       style={{
-                        background: cell.isFuture
-                          ? "rgba(255,255,255,0.02)"
-                          : scoreToColor(score()?.score ?? -1),
-                        cursor: cell.isFuture ? "default" : "pointer",
-                      }}
+                        background: cellColor(),
+                        "--cell-glow": cellColor(),
+                      } as any}
                       aria-label={cell.date.toLocaleDateString([], {
-                        weekday: "long", month: "long", day: "numeric"
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
                       })}
                       aria-selected={isSelected(cell.dateStr)}
                       onClick={() => handleClick(cell)}
@@ -199,15 +254,28 @@ export function AirQualityHeatmap(props: Props) {
 
             {/* Tooltip */}
             <Show when={tooltip()}>
-              <div
-                class="heatmap-tooltip"
-                style={{
-                  left: `${tooltip()!.x}px`,
-                  top: `${tooltip()!.y}px`,
-                }}
-              >
-                {tooltip()!.text}
-              </div>
+              {(t) => (
+                <div
+                  class="heatmap-tooltip"
+                  style={{ left: `${t().x}px`, top: `${t().y}px` }}
+                >
+                  <div class="heatmap-tooltip-date">{t().dateLabel}</div>
+                  <div class="heatmap-tooltip-score">
+                    {t().score !== null ? (
+                      <>
+                        <span
+                          class="heatmap-tooltip-dot"
+                          style={{ background: scoreToColor(t().score!) }}
+                        />
+                        <span>{t().score}/100</span>
+                        <span class="heatmap-tooltip-status">{t().status}</span>
+                      </>
+                    ) : (
+                      <span style={{ color: "var(--text-muted)" }}>No data</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </Show>
           </div>
         </div>
@@ -218,28 +286,22 @@ export function AirQualityHeatmap(props: Props) {
 
 function HeatmapLegend() {
   return (
-    <div class="heatmap-legend" aria-label="Color legend">
-      <span class="heatmap-legend-label">Poor</span>
-      <div class="heatmap-legend-swatch" style={{ background: scoreToColor(5)   }} />
-      <div class="heatmap-legend-swatch" style={{ background: scoreToColor(30)  }} />
-      <div class="heatmap-legend-swatch" style={{ background: scoreToColor(55)  }} />
-      <div class="heatmap-legend-swatch" style={{ background: scoreToColor(80)  }} />
-      <div class="heatmap-legend-swatch" style={{ background: scoreToColor(100) }} />
-      <span class="heatmap-legend-label">Good</span>
-      <div class="heatmap-legend-swatch" style={{ background: "rgba(255,255,255,0.06)" }} />
-      <span class="heatmap-legend-label">No data</span>
+    <div class="heatmap-legend">
+      <span class="heatmap-legend-label">Less</span>
+      {([-1, 18, 42, 68, 90] as const).map((s) => (
+        <div class="heatmap-legend-dot" style={{ background: scoreToColor(s) }} />
+      ))}
+      <span class="heatmap-legend-label">More</span>
     </div>
   );
 }
 
-// score=-1 → no data; score=0-100 → color
-function scoreToColor(score: number): string {
+export function scoreToColor(score: number): string {
   if (score < 0) return "rgba(255,255,255,0.06)";
-  if (score === 0) return "rgba(239,68,68,0.55)";
-  // hue: 0(red) at score=0 → 120(green) at score=100
-  const hue = (score / 100) * 120;
-  const sat = 72;
-  const lit = score > 60 ? 38 : 42;
-  const alpha = 0.55 + (score / 100) * 0.3;
-  return `hsla(${hue.toFixed(0)}, ${sat}%, ${lit}%, ${alpha.toFixed(2)})`;
+  if (score === 0) return "hsla(0, 85%, 42%, 0.88)";
+  const hue = (score / 100) * 118;
+  const sat = 78;
+  const lit = 37 + (score / 100) * 5;
+  const alpha = 0.62 + (score / 100) * 0.28;
+  return `hsla(${hue.toFixed(0)}, ${sat}%, ${lit.toFixed(0)}%, ${alpha.toFixed(2)})`;
 }

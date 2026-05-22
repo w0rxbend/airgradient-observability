@@ -235,7 +235,7 @@ button, a {
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 8px;
-  min-height: 230px;
+  min-height: 240px;
   position: relative;
   transition: box-shadow 0.25s, border-color 0.25s;
 }
@@ -313,6 +313,9 @@ button, a {
   color: var(--text-muted);
   position: relative;
   z-index: 1;
+  margin-top: 5px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .gauge-footer span:last-child {
@@ -381,52 +384,215 @@ button, a {
 
 /* ─── Air quality score panel ────────────────────────────────────── */
 
-.aq-panel {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 24px;
-  padding: 20px 24px;
-  align-items: center;
-}
+/* ─── AQ Hero card ───────────────────────────────────────────────── */
 
-.aq-gauge-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.aq-gauge-wrap svg {
-  width: 160px;
-  height: auto;
-  overflow: visible;
-}
-
-.aq-score-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-}
-
-.aq-info {
+.aq-hero {
+  padding: 20px 22px;
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
 }
 
-.aq-recommendation {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.4;
+/* Decorative radial blob in top-right corner */
+.aq-hero-blob {
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.6;
 }
 
-.aq-metric-pills {
+.aq-hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.aq-hero-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.aq-hero-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-md);
+  border: 1px solid;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.aq-hero-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.aq-hero-score-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.aq-hero-score {
+  font-size: 3.8rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.aq-hero-score-meta {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 6px;
+  gap: 2px;
+}
+
+.aq-hero-max {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aq-hero-desc {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.aq-hero-rec {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  position: relative;
+  z-index: 1;
+}
+
+.aq-hero-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Status monitor ─────────────────────────────────────────────── */
+
+.status-monitor {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+}
+
+.status-monitor-device {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.status-monitor-device-icon {
+  font-size: 1.4rem;
+  width: 40px;
+  height: 40px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.status-monitor-device-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.status-monitor-device-type {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ─── Status metrics infographic ─────────────────────────────────── */
+
+.status-metrics {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex: 1;
+  padding: 0 8px;
+}
+
+.status-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.status-metric-icon {
+  flex-shrink: 0;
+  line-height: 0;
+  opacity: 0.88;
+}
+
+.status-metric-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.status-metric-value {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-metric-unit {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-monitor-right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.status-monitor-time {
+  white-space: nowrap;
 }
 
 /* ─── Controls row ───────────────────────────────────────────────── */
@@ -550,6 +716,13 @@ button, a {
 .chart-unit {
   font-size: 0.82rem;
   color: var(--text-muted);
+}
+
+.chart-type-switcher.segmented button {
+  min-height: 26px;
+  min-width: 40px;
+  font-size: 0.74rem;
+  padding: 0 9px;
 }
 
 .chart-svg-wrap {
@@ -827,16 +1000,22 @@ button, a {
 /* ─── Heatmap ────────────────────────────────────────────────────── */
 
 .heatmap-wrap {
-  padding: 20px 24px 18px;
+  padding: 22px 24px 20px;
 }
 
 .heatmap-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
+}
+
+.heatmap-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .heatmap-eyebrow {
@@ -845,96 +1024,159 @@ button, a {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-muted);
-  margin-bottom: 2px;
 }
 
 .heatmap-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
+}
+
+.heatmap-stat {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.heatmap-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .heatmap-scroll {
   overflow-x: auto;
-  padding-bottom: 4px;
 }
 
 .heatmap-layout {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  min-width: max-content;
+  gap: 8px;
 }
 
 .heatmap-dow-col {
   display: flex;
   flex-direction: column;
-  padding-top: 20px; /* offset for month labels row */
+  padding-top: 22px;
+  flex-shrink: 0;
 }
 
 .heatmap-dow-label {
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 13px;
-  width: 22px;
+  letter-spacing: 0.03em;
+  line-height: 22px;
+  width: 28px;
 }
 
 .heatmap-months {
   position: relative;
-  height: 18px;
-  margin-bottom: 2px;
+  height: 20px;
+  margin-bottom: 4px;
 }
 
 .heatmap-month-label {
   position: absolute;
-  font-size: 0.62rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
+/* ── Cells ── */
+
 .heatmap-cell {
-  border-radius: 3px;
-  transition: transform 0.1s, box-shadow 0.1s;
+  border-radius: 7px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.heatmap-cell.empty {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.heatmap-cell.future {
+  opacity: 0.35;
 }
 
 .heatmap-cell:hover:not(.future) {
-  transform: scale(1.3);
+  transform: scale(1.25);
   z-index: 2;
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 0 10px 2px var(--cell-glow, rgba(255, 255, 255, 0.1));
+}
+
+.heatmap-cell.today {
+  outline: 2px solid rgba(56, 189, 248, 0.9);
+  outline-offset: 2px;
+  z-index: 1;
   position: relative;
 }
 
 .heatmap-cell.selected {
-  box-shadow: 0 0 0 2px var(--c-info), 0 0 8px rgba(56, 189, 248, 0.5);
-  transform: scale(1.2);
+  outline: 2px solid var(--c-info);
+  outline-offset: 2px;
+  transform: scale(1.15);
   z-index: 3;
   position: relative;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.45);
 }
+
+/* ── Tooltip ── */
 
 .heatmap-tooltip {
   position: absolute;
   transform: translateX(-50%) translateY(-100%);
   background: var(--bg-overlay);
   border: 1px solid var(--border-strong);
-  border-radius: var(--r-sm);
-  padding: 5px 10px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
+  border-radius: var(--r-md);
+  padding: 8px 12px;
   pointer-events: none;
   z-index: 20;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  white-space: nowrap;
+  margin-top: -6px;
 }
+
+.heatmap-tooltip-date {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.heatmap-tooltip-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.heatmap-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.heatmap-tooltip-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+/* ── Legend ── */
 
 .heatmap-legend {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
@@ -944,10 +1186,11 @@ button, a {
   font-weight: 600;
 }
 
-.heatmap-legend-swatch {
-  width: 11px;
-  height: 11px;
-  border-radius: 2px;
+.heatmap-legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 /* ─── Chart grid (all 6 charts) ──────────────────────────────────── */
@@ -1032,5 +1275,68 @@ button, a {
 @media (max-width: 480px) {
   .metric-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Kiosk / TV mode ────────────────────────────────────────────── */
+
+.kiosk {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 20px 24px 0;
+  box-sizing: border-box;
+}
+
+.kiosk-gauge-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.kiosk-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  flex: 1;
+}
+
+.kiosk-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px 16px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  gap: 16px;
+}
+
+.kiosk-brand {
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.kiosk-status {
+  display: flex;
+  align-items: center;
+}
+
+.kiosk-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-align: right;
+}
+
+@media (max-width: 1280px) {
+  .kiosk-gauge-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .kiosk-chart-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

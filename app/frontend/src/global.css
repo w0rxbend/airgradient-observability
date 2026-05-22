@@ -1529,3 +1529,2165 @@ button, a {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ─── Kiosk main / current-only theatre ─────────────────────────── */
+
+.kiosk-main {
+  --km-bg: #080812;
+  --km-panel-bg: rgba(10, 13, 30, 0.76);
+  --km-panel-line: rgba(255, 255, 255, 0.14);
+  --km-panel-hotline: color-mix(in srgb, var(--accent, var(--c-info)) 70%, white 10%);
+  --km-scanline: rgba(255, 255, 255, 0.055);
+  height: 100dvh;
+  min-height: 100dvh;
+  padding: clamp(14px, 1.45vw, 28px);
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 16% 8%, color-mix(in srgb, var(--metric-voc) 24%, transparent) 0%, transparent 30%),
+    radial-gradient(circle at 83% 9%, color-mix(in srgb, var(--c-info) 22%, transparent) 0%, transparent 32%),
+    radial-gradient(circle at 46% 90%, color-mix(in srgb, var(--metric-humidity) 16%, transparent) 0%, transparent 36%),
+    conic-gradient(from 212deg at 58% 42%, transparent 0 24%, rgba(65, 255, 218, 0.065) 33%, transparent 47%, rgba(255, 109, 230, 0.055) 64%, transparent 80%),
+    linear-gradient(135deg, #060712 0%, #10162d 44%, #070813 100%),
+    var(--km-bg);
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+.kiosk-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--km-scanline) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.03) 50%, transparent 50%);
+  background-size: 54px 54px, 54px 54px, 100% 6px;
+  mask-image: radial-gradient(circle at 50% 42%, black 0%, transparent 82%);
+  -webkit-mask-image: radial-gradient(circle at 50% 42%, black 0%, transparent 82%);
+  opacity: 0.75;
+  animation: km-grid-drift 18s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.kiosk-main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 16%),
+    radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.36) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.kiosk-main > * {
+  position: relative;
+  z-index: 1;
+}
+
+.kiosk-main svg {
+  shape-rendering: geometricPrecision;
+}
+
+.kiosk-main ::selection {
+  background: color-mix(in srgb, var(--c-info) 42%, transparent);
+  color: #fff;
+}
+
+.kiosk-main .error-box {
+  position: relative;
+  z-index: 2;
+  border-color: color-mix(in srgb, var(--c-critical) 40%, var(--border-glass));
+  box-shadow: 0 0 34px color-mix(in srgb, var(--c-critical) 22%, transparent);
+}
+
+.kiosk-main-time .status-strip-dot {
+  box-shadow: 0 0 16px var(--c-good);
+  animation: km-live-dot 1.8s ease-in-out infinite;
+}
+
+.kiosk-main .kiosk-main-time .status-strip-dot.degraded {
+  background: var(--c-warning);
+  box-shadow: 0 0 14px var(--c-warning);
+}
+
+.kiosk-main .kiosk-main-time small {
+  margin-left: 2px;
+  color: var(--c-warning);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.kiosk-main .km-panel > *,
+.kiosk-main .km-climate-readings > *,
+.kiosk-main .km-score-ring,
+.kiosk-main .km-score-stack {
+  position: relative;
+  z-index: 1;
+}
+
+.kiosk-main .km-panel:hover {
+  border-color: color-mix(in srgb, var(--accent, var(--c-info)) 38%, rgba(255, 255, 255, 0.18));
+  transform: translateY(-2px);
+  box-shadow:
+    0 34px 86px rgba(0, 0, 0, 0.42),
+    0 0 42px color-mix(in srgb, var(--accent, var(--c-info)) 22%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.kiosk-main .km-panel:hover::before {
+  opacity: 0.95;
+  transform: translateX(46%);
+}
+
+.kiosk-main-aurora.three {
+  left: 38vw;
+  top: -16vh;
+  width: 28vw;
+  background: var(--metric-pm25);
+  animation-delay: -7s;
+}
+
+@supports (background-blend-mode: screen) {
+  .kiosk-main {
+    background-blend-mode: screen, screen, screen, lighten, normal, normal;
+  }
+}
+
+@supports not (color: color-mix(in srgb, white, black)) {
+  .kiosk-main {
+    --km-panel-hotline: var(--c-info);
+    background:
+      radial-gradient(circle at 16% 8%, rgba(203, 166, 247, 0.2) 0%, transparent 30%),
+      radial-gradient(circle at 83% 9%, rgba(137, 180, 250, 0.18) 0%, transparent 32%),
+      linear-gradient(135deg, #060712 0%, #10162d 44%, #070813 100%),
+      var(--km-bg);
+  }
+
+  .kiosk-main ::selection {
+    background: rgba(137, 180, 250, 0.42);
+  }
+
+  .kiosk-main .error-box {
+    border-color: rgba(243, 139, 168, 0.4);
+    box-shadow: 0 0 34px rgba(243, 139, 168, 0.22);
+  }
+
+  .kiosk-main .km-panel,
+  .kiosk-main .km-ring,
+  .kiosk-main .km-dots,
+  .kiosk-main .km-slider {
+    background:
+      linear-gradient(var(--km-panel-tilt, 145deg), rgba(137, 180, 250, 0.1), transparent 42%),
+      linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.018)),
+      var(--km-panel-bg);
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  }
+
+  .kiosk-main .km-panel::after {
+    background: radial-gradient(ellipse at center, rgba(137, 180, 250, 0.18), transparent 70%);
+  }
+
+  .kiosk-main .km-panel:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    box-shadow:
+      0 34px 86px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+}
+
+.kiosk-main-aurora {
+  position: absolute;
+  width: clamp(260px, 34vw, 640px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  filter: blur(50px) saturate(1.25);
+  opacity: 0.4;
+  mix-blend-mode: screen;
+  animation: km-float 10s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.kiosk-main-aurora.one {
+  left: -7vw;
+  top: 22vh;
+  background: var(--metric-voc);
+}
+
+.kiosk-main-aurora.two {
+  right: -9vw;
+  bottom: 8vh;
+  background: var(--c-info);
+  animation-delay: -4s;
+}
+
+.kiosk-main-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: clamp(10px, 1.1vw, 18px);
+  padding-bottom: clamp(8px, 0.8vw, 14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kiosk-main-kicker,
+.km-eyebrow {
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--text-muted);
+}
+
+.kiosk-main-kicker {
+  color: color-mix(in srgb, var(--c-info) 70%, white);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--c-info) 48%, transparent);
+}
+
+.kiosk-main-header h1 {
+  font-size: clamp(2.3rem, 3.35vw, 4.15rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+  margin-top: 6px;
+  background: linear-gradient(92deg, #fff 0%, color-mix(in srgb, var(--c-info) 58%, white) 48%, color-mix(in srgb, var(--metric-voc) 55%, white) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 34px rgba(89, 219, 255, 0.16);
+}
+
+.kiosk-main-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 13px;
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.025)),
+    rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.35),
+    0 0 28px rgba(92, 232, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.kiosk-main-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(300px, 1.26fr) repeat(3, minmax(190px, 1fr));
+  grid-template-rows: minmax(0, 1.08fr) repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: clamp(10px, 1.1vw, 18px);
+  height: calc(100dvh - clamp(170px, 11vw, 210px));
+  align-items: stretch;
+}
+
+.km-panel {
+  border: 1px solid var(--km-panel-line);
+  border-radius: 20px;
+  background:
+    linear-gradient(var(--km-panel-tilt, 145deg), color-mix(in srgb, var(--accent, var(--c-info)) 12%, transparent), transparent 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.018)),
+    var(--km-panel-bg);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.38),
+    0 0 26px color-mix(in srgb, var(--accent, var(--c-info)) 10%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  overflow: hidden;
+  position: relative;
+  transition: transform 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
+}
+
+.km-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent),
+    linear-gradient(180deg, var(--km-panel-hotline), transparent 48%);
+  opacity: 0.55;
+  mask-image: linear-gradient(90deg, transparent, black 22%, black 78%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 22%, black 78%, transparent);
+  pointer-events: none;
+  transform: translateX(-52%);
+  animation: km-panel-sheen 8s ease-in-out infinite;
+}
+
+.km-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -18% -40% -18%;
+  height: 72%;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent, var(--c-info)) 26%, transparent), transparent 70%);
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.km-mood {
+  --accent: var(--c-good);
+  --km-panel-tilt: 118deg;
+  grid-column: 1;
+  grid-row: span 2;
+  padding: clamp(16px, 1.6vw, 28px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  min-height: 0;
+}
+
+.km-mood.warning,
+.km-score.warning,
+.km-climate.warning {
+  --accent: var(--c-warning);
+}
+
+.km-mood.critical,
+.km-score.critical,
+.km-climate.critical {
+  --accent: var(--c-critical);
+}
+
+.km-mood.empty,
+.km-score.empty,
+.km-climate.empty {
+  --accent: var(--c-muted);
+}
+
+.km-mood-face-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.km-face {
+  width: min(82%, 310px);
+  overflow: visible;
+  color: var(--accent);
+  filter:
+    drop-shadow(0 0 16px color-mix(in srgb, var(--accent) 48%, transparent))
+    drop-shadow(0 0 46px color-mix(in srgb, var(--accent) 18%, transparent));
+  animation: km-breathe 4.8s ease-in-out infinite;
+}
+
+.km-face-orb {
+  fill: url(#km-face-orb);
+}
+
+.km-face-orbit {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 32%, transparent);
+  stroke-width: 1.8;
+  stroke-dasharray: 9 16;
+  stroke-linecap: round;
+  opacity: 0.7;
+  animation: km-face-orbit 9s linear infinite;
+}
+
+.km-face-orbit.two {
+  animation-direction: reverse;
+  animation-duration: 12s;
+  opacity: 0.48;
+}
+
+.km-expression path,
+.km-face .spark {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 5.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: url(#km-face-glow);
+}
+
+.km-expression .eye {
+  stroke-width: 6.5;
+}
+
+.km-expression .mouth {
+  stroke: color-mix(in srgb, #ffffff 88%, var(--accent));
+}
+
+.km-expression .detail {
+  stroke: color-mix(in srgb, #ffffff 72%, var(--accent));
+  stroke-width: 3.6;
+  opacity: 0.92;
+}
+
+.km-expression.warning .mouth,
+.km-expression.empty .mouth {
+  stroke: var(--accent);
+}
+
+.km-expression.critical .eye,
+.km-expression.critical .mouth {
+  stroke: #ffffff;
+  animation: km-face-jitter 1.8s steps(2, end) infinite;
+}
+
+.km-face .spark {
+  stroke: var(--accent);
+  stroke-width: 3.6;
+  opacity: 0.82;
+  animation: km-spark-blink 2.4s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.km-mood-score {
+  margin-top: 6px;
+  font-size: clamp(3.5rem, 6.25vw, 6.7rem);
+  line-height: 0.86;
+  font-weight: 950;
+  color: transparent;
+  background: linear-gradient(180deg, #fff 0%, var(--accent) 46%, color-mix(in srgb, var(--accent) 70%, black) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-shadow: 0 0 42px color-mix(in srgb, var(--accent) 50%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.5s ease, text-shadow 0.5s ease;
+}
+
+.km-mood-dots {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  gap: 6px;
+  max-width: min(100%, 290px);
+  margin-top: 16px;
+}
+
+.km-mood-dots span {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0.32;
+  animation: km-dot-pulse 1.8s ease-in-out infinite;
+  animation-delay: var(--delay);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.km-climate {
+  --accent: var(--c-info);
+  --km-panel-tilt: 148deg;
+  grid-column: 2 / 5;
+  grid-row: 1;
+  padding: clamp(14px, 1.35vw, 24px);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 0.84fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.km-neon-air {
+  width: min(100%, 300px);
+  max-height: 210px;
+  overflow: visible;
+  justify-self: center;
+  filter: drop-shadow(0 0 36px color-mix(in srgb, var(--c-info) 26%, transparent));
+}
+
+.km-neon-air .sun,
+.km-neon-air .cloud,
+.km-neon-air .drop {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: url(#km-neon-glow);
+}
+
+.km-neon-air .sun {
+  stroke: var(--metric-pm25);
+  stroke-width: 5;
+  animation: km-sun-spin 18s linear infinite;
+  transform-origin: 86px 70px;
+}
+
+.km-neon-air .cloud {
+  stroke: #ffffff;
+  stroke-width: 5;
+}
+
+.km-neon-air .cloud.two {
+  stroke: var(--metric-humidity);
+  animation: km-cloud-slide 5s ease-in-out infinite alternate;
+}
+
+.km-neon-air .drop {
+  stroke: var(--metric-humidity);
+  stroke-width: 4;
+  animation: km-rain 1.8s ease-in-out infinite;
+}
+
+.km-neon-air .drop.second {
+  animation-delay: 0.35s;
+}
+
+.km-climate-readings {
+  display: grid;
+  gap: 10px;
+}
+
+.km-climate-readings div {
+  padding: 12px 15px;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--accent) 72%, white 8%),
+    0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.km-climate-readings span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.km-climate-readings strong {
+  display: block;
+  margin-top: 5px;
+  font-size: clamp(1.35rem, 2.05vw, 2.15rem);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.km-score {
+  --accent: var(--c-good);
+  --km-panel-tilt: 220deg;
+  grid-column: 2;
+  grid-row: 2;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(90px, 112px) 1fr;
+  gap: 13px;
+  align-items: center;
+}
+
+.km-score-ring {
+  --score: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+}
+
+.km-score-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.km-score-track,
+.km-score-progress {
+  fill: none;
+  stroke-width: 13;
+}
+
+.km-score-track {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.km-score-progress {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-dasharray: var(--score) 100;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) 65%, transparent));
+  transition: stroke-dasharray 0.85s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s ease;
+  animation: km-score-glow 3s ease-in-out infinite;
+}
+
+.km-score-ring span {
+  position: absolute;
+  font-size: 1.75rem;
+  font-weight: 950;
+  color: var(--accent);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.km-score-stack {
+  display: grid;
+  gap: 7px;
+}
+
+.km-score-bar {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 7px;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.km-score-bar i {
+  height: 7px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, #fff 0%, var(--accent) var(--w), rgba(255, 255, 255, 0.06) var(--w));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 28%, transparent);
+  transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+}
+
+.km-metric {
+  min-height: 0;
+  padding: 16px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 9px;
+}
+
+.km-co2 {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.km-pm25 {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+.km-voc {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.km-nox {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.km-temperature {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.km-humidity {
+  grid-column: 4;
+  grid-row: 3;
+}
+
+.km-metric.good {
+  --km-status-glow: color-mix(in srgb, var(--c-good) 22%, transparent);
+}
+
+.km-metric.warning {
+  --km-status-glow: color-mix(in srgb, var(--c-warning) 24%, transparent);
+}
+
+.km-metric.critical {
+  --km-status-glow: color-mix(in srgb, var(--c-critical) 28%, transparent);
+}
+
+.km-metric.empty {
+  --km-status-glow: color-mix(in srgb, var(--c-muted) 18%, transparent);
+}
+
+.km-ring {
+  background:
+    radial-gradient(circle at 78% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 42%),
+    linear-gradient(var(--km-panel-tilt, 145deg), color-mix(in srgb, var(--accent) 13%, transparent), transparent 42%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.018)),
+    var(--km-panel-bg);
+}
+
+.km-dots {
+  background:
+    radial-gradient(circle at 24% 18%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 38%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.032) 0 1px, transparent 1px 16px),
+    linear-gradient(var(--km-panel-tilt, 145deg), color-mix(in srgb, var(--accent) 11%, transparent), transparent 46%),
+    var(--km-panel-bg);
+}
+
+.km-slider {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 45%),
+    radial-gradient(circle at 82% 82%, var(--km-status-glow, color-mix(in srgb, var(--accent) 18%, transparent)), transparent 42%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.018)),
+    var(--km-panel-bg);
+}
+
+.km-metric header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-width: 0;
+}
+
+.km-metric header span {
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.km-metric-icon {
+  width: 34px;
+  height: 34px;
+  color: var(--accent);
+  overflow: visible;
+  padding: 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.04));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
+  flex: 0 0 auto;
+}
+
+.km-metric-icon path,
+.km-metric-icon line,
+.km-metric-icon circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 80%, transparent));
+}
+
+.km-metric-icon circle {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.86;
+}
+
+.km-metric-value {
+  font-size: clamp(2.15rem, 3.25vw, 3.55rem);
+  line-height: 0.92;
+  font-weight: 950;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 22px color-mix(in srgb, var(--accent) 34%, transparent),
+    0 14px 36px rgba(0, 0, 0, 0.34);
+  transition: color 0.5s ease, text-shadow 0.5s ease;
+}
+
+.km-metric-value small {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.km-ring-viz {
+  align-self: end;
+  width: 100%;
+  max-height: 132px;
+  overflow: visible;
+}
+
+.km-ring-viz .track,
+.km-ring-viz .progress {
+  fill: none;
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+
+.km-ring-viz .track {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.km-ring-viz .track.halo {
+  stroke: color-mix(in srgb, var(--accent) 18%, transparent);
+  stroke-width: 18;
+  opacity: 0.55;
+}
+
+.km-ring-viz .progress {
+  stroke: var(--accent);
+  stroke-dasharray: calc(var(--pct) * 100) 100;
+  stroke-width: 12;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 60%, transparent));
+  transition: stroke-dasharray 0.85s cubic-bezier(0.22, 1, 0.36, 1), stroke 0.5s ease;
+  animation: km-score-glow 3.2s ease-in-out infinite;
+}
+
+.km-gauge-ticks line {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.km-gauge-ticks line.major {
+  stroke: color-mix(in srgb, var(--accent) 62%, white 12%);
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 42%, transparent));
+}
+
+.km-gauge-needle {
+  color: #fff;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.km-gauge-needle line {
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 72%, transparent));
+}
+
+.km-gauge-needle circle {
+  fill: var(--accent);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.km-gauge-knob-shadow {
+  fill: color-mix(in srgb, var(--accent) 30%, transparent);
+  filter: blur(3px);
+}
+
+.km-gauge-knob {
+  fill: #fff;
+  stroke: var(--accent);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 12px var(--accent));
+}
+
+.km-gauge-core circle {
+  fill:
+    color-mix(in srgb, var(--bg-surface) 84%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 35%, rgba(255, 255, 255, 0.18));
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 22%, transparent));
+}
+
+.km-gauge-glyph {
+  color: var(--accent);
+}
+
+.km-gauge-glyph path,
+.km-gauge-glyph line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.km-gauge-glyph circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.km-gauge-readout rect {
+  fill: rgba(0, 0, 0, 0.34);
+  stroke: color-mix(in srgb, var(--accent) 22%, transparent);
+  stroke-width: 1;
+}
+
+.km-gauge-readout text {
+  fill: color-mix(in srgb, var(--accent) 62%, #fff);
+  font-size: 9px;
+  font-weight: 900;
+  text-anchor: middle;
+  font-family: inherit;
+  letter-spacing: 0;
+}
+
+.km-dot-viz {
+  align-self: end;
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+}
+
+.km-dot-viz span {
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.km-dot-viz span.on {
+  background: var(--accent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: km-dot-pop 1.6s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.km-slider-viz {
+  justify-self: end;
+  align-self: stretch;
+  width: 42px;
+  min-height: 92px;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035)),
+    rgba(255, 255, 255, 0.05);
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    inset 0 -24px 34px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.km-slider-viz span {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 10px;
+  height: calc(var(--pct) * 100%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff 0%, var(--accent) 30%, color-mix(in srgb, var(--accent) 70%, black) 100%);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 55%, transparent);
+  transition: height 0.85s cubic-bezier(0.22, 1, 0.36, 1), background 0.5s ease, box-shadow 0.5s ease;
+}
+
+.km-slider-viz i {
+  position: absolute;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transform: translate(-50%, 50%);
+  box-shadow: 0 0 14px var(--accent);
+}
+
+.kiosk-main-loading {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.kiosk-main-skeleton {
+  min-height: 220px;
+  border-radius: 22px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+  background-size: 400px 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+@keyframes km-float {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(4vw, -3vh, 0) scale(1.12); }
+}
+
+@keyframes km-breathe {
+  0%, 100% { transform: scale(1) rotate(-1deg); }
+  50% { transform: scale(1.04) rotate(1deg); }
+}
+
+@keyframes km-face-orbit {
+  to { stroke-dashoffset: -100; }
+}
+
+@keyframes km-face-jitter {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(1px, -1px); }
+}
+
+@keyframes km-spark-blink {
+  0%, 100% { opacity: 0.22; transform: scale(0.92); }
+  45%, 60% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes km-dot-pulse {
+  0%, 100% { opacity: 0.24; transform: scaleX(0.72); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes km-sun-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes km-cloud-slide {
+  to { transform: translateX(12px); }
+}
+
+@keyframes km-rain {
+  0%, 100% { opacity: 0.25; transform: translateY(-5px); }
+  50% { opacity: 1; transform: translateY(4px); }
+}
+
+@keyframes km-dot-pop {
+  0%, 100% { transform: scale(0.86); }
+  50% { transform: scale(1.14); }
+}
+
+@keyframes km-grid-drift {
+  to { background-position: 54px 54px, -54px 54px, 0 6px; }
+}
+
+@keyframes km-live-dot {
+  0%, 100% { transform: scale(0.85); opacity: 0.62; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+@keyframes km-panel-sheen {
+  0% { transform: translateX(-72%); opacity: 0; }
+  18% { opacity: 0.86; }
+  58%, 100% { transform: translateX(72%); opacity: 0; }
+}
+
+@keyframes km-score-glow {
+  0%, 100% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 58%, transparent)); }
+  50% { filter: drop-shadow(0 0 22px color-mix(in srgb, var(--accent) 76%, transparent)); }
+}
+
+@media (min-width: 1540px) {
+  .kiosk-main {
+    padding-inline: clamp(20px, 1.55vw, 34px);
+  }
+
+  .kiosk-main-grid {
+    grid-template-columns: minmax(320px, 1.25fr) repeat(3, minmax(210px, 1fr));
+    grid-template-rows: minmax(0, 1.08fr) repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .kiosk-main-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .km-mood,
+  .km-climate {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .kiosk-main-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kiosk-main-time {
+    align-self: flex-start;
+  }
+
+  .kiosk-main-grid,
+  .kiosk-main-loading {
+    grid-template-columns: 1fr;
+  }
+
+  .km-mood,
+  .km-climate {
+    grid-column: span 1;
+  }
+
+  .km-climate,
+  .km-score {
+    grid-template-columns: 1fr;
+  }
+
+  .km-mood {
+    min-height: auto;
+  }
+
+  .km-mood-face-wrap {
+    min-height: 210px;
+  }
+
+  .km-neon-air {
+    max-height: 190px;
+  }
+
+  .km-slider-viz {
+    justify-self: stretch;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .km-slider-viz span {
+    top: 17px;
+    bottom: 17px;
+    left: 13px;
+    right: auto;
+    width: calc(var(--pct) * 100%);
+    height: auto;
+  }
+
+  .km-slider-viz i {
+    top: 50%;
+    bottom: auto !important;
+    left: clamp(9%, calc(var(--pct) * 100%), 91%);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 520px) {
+  .kiosk-main {
+    padding: 14px;
+  }
+
+  .kiosk-main-header h1 {
+    font-size: clamp(2.1rem, 14vw, 3.2rem);
+  }
+
+  .km-panel {
+    border-radius: 20px;
+  }
+
+  .km-metric header {
+    align-items: flex-start;
+  }
+
+  .km-metric-value {
+    font-size: clamp(2.4rem, 18vw, 3.6rem);
+  }
+}
+
+@media (max-height: 760px) and (min-width: 900px) {
+  .kiosk-main {
+    padding-block: 12px;
+  }
+
+  .kiosk-main-header {
+    margin-bottom: 10px;
+  }
+
+  .kiosk-main-grid {
+    height: calc(100dvh - 96px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-main *,
+  .kiosk-main *::before,
+  .kiosk-main *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Kiosk main v2 / OLED liquid glass ─────────────────────────── */
+
+.km2-shell {
+  --km2-bg: #010207;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+  padding: clamp(18px, 1.6vw, 30px);
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(137, 180, 250, 0.16), transparent 31%),
+    radial-gradient(circle at 84% 16%, rgba(137, 220, 235, 0.12), transparent 28%),
+    radial-gradient(circle at 54% 104%, rgba(203, 166, 247, 0.12), transparent 32%),
+    linear-gradient(135deg, #010207 0%, #070916 52%, #010207 100%);
+}
+
+.km2-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.46) 100%);
+  background-size: 60px 60px, 60px 60px, 100% 100%;
+  opacity: 0.72;
+  pointer-events: none;
+  animation: km2-grid 26s linear infinite;
+}
+
+.km2-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 14%, rgba(0,0,0,0.24));
+  pointer-events: none;
+}
+
+.km2-ambient {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.km2-ambient.orb-a,
+.km2-ambient.orb-b {
+  width: clamp(280px, 34vw, 620px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  filter: blur(54px) saturate(1.35);
+  mix-blend-mode: screen;
+  opacity: 0.34;
+  animation: km2-drift 12s ease-in-out infinite alternate;
+}
+
+.km2-ambient.orb-a {
+  left: -10vw;
+  top: 16vh;
+  background: var(--metric-voc);
+}
+
+.km2-ambient.orb-b {
+  right: -11vw;
+  bottom: 4vh;
+  background: var(--metric-humidity);
+  animation-delay: -5s;
+}
+
+.km2-ambient.veil {
+  inset: 0;
+  background:
+    conic-gradient(from 240deg at 42% 44%, transparent 0 20%, rgba(137, 180, 250, 0.08) 31%, transparent 43%, rgba(249, 226, 175, 0.055) 61%, transparent 80%),
+    linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.035), transparent);
+  opacity: 0.75;
+}
+
+.km2-shell > *:not(.km2-ambient) {
+  position: relative;
+  z-index: 1;
+}
+
+.km2-header {
+  height: clamp(74px, 8.2dvh, 104px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.km2-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: clamp(0.66rem, 0.75vw, 0.82rem);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.km2-header h1 {
+  margin: 4px 0 0;
+  color: #fff;
+  font-size: clamp(2.4rem, 4.2vw, 4.75rem);
+  line-height: 0.9;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-shadow: 0 0 42px rgba(137, 180, 250, 0.18);
+}
+
+.km2-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(4, 8, 20, 0.54);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    0 16px 38px rgba(0,0,0,0.34);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+}
+
+.km2-sync span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-good);
+  box-shadow: 0 0 14px var(--c-good);
+}
+
+.km2-sync.stale span {
+  background: var(--c-warning);
+  box-shadow: 0 0 14px var(--c-warning);
+}
+
+.km2-sync strong {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.km2-sync em {
+  color: var(--c-warning);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.km2-board {
+  height: calc(100dvh - clamp(106px, 10.4dvh, 136px));
+  display: grid;
+  grid-template-columns: minmax(310px, 1.18fr) minmax(360px, 1.52fr);
+  grid-template-rows: minmax(0, 1.02fr) minmax(0, 1fr);
+  gap: clamp(12px, 1.1vw, 18px);
+}
+
+.km2-card {
+  --accent: var(--c-info);
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.025) 42%, rgba(255,255,255,0.06)),
+    color-mix(in srgb, var(--accent) 8%, rgba(8, 12, 28, 0.72));
+  box-shadow:
+    0 26px 80px rgba(0,0,0,0.42),
+    0 0 34px color-mix(in srgb, var(--accent) 10%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+
+.km2-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 36%),
+    linear-gradient(100deg, transparent 0 35%, rgba(255,255,255,0.1) 48%, transparent 62% 100%);
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.km2-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -16% -44% -16%;
+  height: 72%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
+  pointer-events: none;
+}
+
+.km2-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.km2-hero {
+  --accent: var(--c-good);
+  grid-row: 1 / 3;
+  padding: clamp(20px, 1.7vw, 30px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.km2-hero.warning { --accent: var(--c-warning); }
+.km2-hero.critical { --accent: var(--c-critical); }
+.km2-hero.empty { --accent: var(--c-muted); }
+
+.km2-hero-copy p,
+.km2-hero-copy span {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.km2-hero-copy strong {
+  display: block;
+  margin-top: 6px;
+  color: transparent;
+  background: linear-gradient(180deg, #fff 0%, var(--accent) 54%, color-mix(in srgb, var(--accent) 70%, black) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  font-size: clamp(5.2rem, 8vw, 8.9rem);
+  line-height: 0.86;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 40px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.km2-status-orb {
+  align-self: center;
+  justify-self: center;
+  width: min(82%, 320px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255,255,255,0.12), transparent 32%),
+    conic-gradient(from -90deg, var(--accent) calc(var(--score) * 1%), rgba(255,255,255,0.07) 0);
+  box-shadow:
+    0 0 44px color-mix(in srgb, var(--accent) 22%, transparent),
+    inset 0 0 0 1px rgba(255,255,255,0.12);
+  transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+}
+
+.km2-status-orb::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: inherit;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03)),
+    rgba(2, 4, 12, 0.86);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -24px 60px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.km2-orb-core {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.km2-orb-core span {
+  font-size: clamp(3rem, 5.3vw, 5.8rem);
+  line-height: 1;
+  font-weight: 950;
+  text-shadow: 0 0 28px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.km2-orb-core small {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.km2-orb-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  opacity: 0.7;
+  animation: km2-orb-pulse 5s ease-in-out infinite;
+}
+
+.km2-orb-ring.two {
+  inset: -24px;
+  opacity: 0.34;
+  animation-delay: -1.7s;
+}
+
+.km2-orb-ring.three {
+  inset: 34px;
+  border-style: dashed;
+  opacity: 0.38;
+  animation-duration: 9s;
+}
+
+.km2-score-band {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.km2-score-band i {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: km2-band 2.2s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.km2-atmosphere {
+  --accent: var(--c-info);
+  padding: clamp(16px, 1.5vw, 26px);
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 0.82fr);
+  gap: clamp(16px, 1.4vw, 26px);
+  align-items: center;
+}
+
+.km2-atmosphere.warning { --accent: var(--c-warning); }
+.km2-atmosphere.critical { --accent: var(--c-critical); }
+
+.km2-liquid-air {
+  width: min(100%, 420px);
+  justify-self: center;
+  overflow: visible;
+}
+
+.km2-liquid-air .ribbon {
+  fill: none;
+  stroke-linecap: round;
+  filter: url(#km2-air-glow);
+  animation: km2-flow 7s ease-in-out infinite alternate;
+}
+
+.km2-liquid-air .ribbon.one {
+  stroke: var(--metric-humidity);
+  stroke-width: 12;
+  opacity: 0.72;
+}
+
+.km2-liquid-air .ribbon.two {
+  stroke: var(--c-info);
+  stroke-width: 7;
+  opacity: 0.62;
+  animation-delay: -2s;
+}
+
+.km2-liquid-air .node {
+  fill: color-mix(in srgb, var(--accent) 13%, rgba(255,255,255,0.05));
+  stroke: rgba(255,255,255,0.72);
+  stroke-width: 3;
+  filter: url(#km2-air-glow);
+}
+
+.km2-liquid-air .particle {
+  fill: #fff;
+  opacity: 0.7;
+  filter: url(#km2-air-glow);
+  animation: km2-particle 4.8s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.km2-primary-list {
+  display: grid;
+  gap: 12px;
+}
+
+.km2-primary {
+  --accent: var(--c-info);
+  display: grid;
+  grid-template-columns: 42px 1fr 76px;
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.035)),
+    color-mix(in srgb, var(--accent) 6%, rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.km2-primary span,
+.km2-tile header span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.km2-primary strong {
+  display: block;
+  color: #fff;
+  font-size: clamp(1.55rem, 2vw, 2.2rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.km2-primary small,
+.km2-value small {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.km2-primary i {
+  height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--accent) calc(var(--pct) * 100%), rgba(255,255,255,0.08) 0);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 34%, transparent);
+  transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.km2-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 1.05vw, 16px);
+}
+
+.km2-tile {
+  --accent: var(--c-info);
+  padding: 16px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.km2-tile header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.km2-glyph {
+  width: 38px;
+  height: 38px;
+  color: var(--accent);
+  padding: 7px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,0.04));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent) 18%, transparent);
+  flex: 0 0 auto;
+}
+
+.km2-glyph.compact {
+  width: 40px;
+  height: 40px;
+}
+
+.km2-glyph path,
+.km2-glyph line,
+.km2-glyph circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+.km2-glyph circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.km2-value {
+  color: #fff;
+  font-size: clamp(2rem, 3vw, 3.25rem);
+  line-height: 0.94;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 20px color-mix(in srgb, var(--accent) 34%, transparent),
+    0 12px 32px rgba(0,0,0,0.34);
+}
+
+.km2-gauge {
+  align-self: end;
+  width: 100%;
+  max-height: 94px;
+  overflow: visible;
+}
+
+.km2-gauge .track {
+  fill: none;
+  stroke: rgba(255,255,255,0.09);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.km2-gauge .track.wide {
+  stroke: color-mix(in srgb, var(--accent) 15%, transparent);
+  stroke-width: 16;
+}
+
+.km2-gauge .fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: calc(var(--pct) * 100) 100;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 58%, transparent));
+  transition: stroke-dasharray 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.km2-gauge .ticks line {
+  stroke: rgba(255,255,255,0.22);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.km2-gauge .ticks line.major {
+  stroke: color-mix(in srgb, var(--accent) 62%, #fff);
+  stroke-width: 2.2;
+}
+
+.km2-gauge .knob-glow {
+  fill: color-mix(in srgb, var(--accent) 28%, transparent);
+  filter: blur(3px);
+}
+
+.km2-gauge .knob {
+  fill: #fff;
+  stroke: var(--accent);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px var(--accent));
+  transition: cx 0.85s cubic-bezier(0.22, 1, 0.36, 1), cy 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.km2-loading {
+  height: calc(100dvh - clamp(106px, 10.4dvh, 136px));
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.km2-loading div {
+  border-radius: 26px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+  background-size: 440px 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+@keyframes km2-grid {
+  to { background-position: 60px 60px, -60px 60px, 0 0; }
+}
+
+@keyframes km2-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(4vw, -3vh, 0) scale(1.12); }
+}
+
+@keyframes km2-orb-pulse {
+  0%, 100% { transform: scale(0.985); opacity: 0.34; }
+  50% { transform: scale(1.025); opacity: 0.76; }
+}
+
+@keyframes km2-band {
+  0%, 100% { transform: scaleY(0.68); opacity: 0.42; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes km2-flow {
+  to { transform: translate3d(8px, -7px, 0); opacity: 0.95; }
+}
+
+@keyframes km2-particle {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.16; }
+  50% { transform: translate3d(18px, -14px, 0); opacity: 0.82; }
+}
+
+@media (max-width: 1180px) {
+  .km2-board {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
+    overflow: auto;
+  }
+
+  .km2-hero {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .km2-shell {
+    height: auto;
+    overflow: auto;
+  }
+
+  .km2-header {
+    height: auto;
+    flex-direction: column;
+    margin-bottom: 18px;
+  }
+
+  .km2-atmosphere {
+    grid-template-columns: 1fr;
+  }
+
+  .km2-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 900px) {
+  .km2-shell {
+    padding: 12px 18px;
+  }
+
+  .km2-header {
+    height: 72px;
+  }
+
+  .km2-board {
+    height: calc(100dvh - 84px);
+  }
+
+}
+
+/* Kiosk main composition reset: compact score, balanced 16:9 TV layout, no fragile SVG gauges. */
+.km2-board {
+  grid-template-columns: minmax(230px, 0.62fr) minmax(360px, 1fr) minmax(520px, 1.48fr);
+  grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: stretch;
+}
+
+.km2-hero {
+  grid-column: 1;
+  grid-row: 1;
+  padding: clamp(16px, 1.35vw, 24px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: clamp(10px, 1vw, 16px);
+}
+
+.km2-hero-copy strong {
+  margin-top: 8px;
+  font-size: clamp(3.4rem, 4.9vw, 5.9rem);
+  line-height: 0.9;
+}
+
+.km2-hero-copy span {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--accent) 74%, white);
+  background: color-mix(in srgb, var(--accent) 11%, rgba(255,255,255,0.06));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  letter-spacing: 0.11em;
+}
+
+.km2-hero-meter {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -8px 18px rgba(0,0,0,0.18);
+}
+
+.km2-hero-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, white));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
+  transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.km2-score-band {
+  gap: 4px;
+}
+
+.km2-score-band i {
+  height: 7px;
+  animation: none;
+}
+
+.km2-primary-card {
+  grid-column: 1;
+  grid-row: 2;
+  padding: clamp(14px, 1.25vw, 22px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+
+.km2-primary-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.km2-primary-card header span,
+.km2-primary-card header strong,
+.km2-atmosphere-caption span,
+.km2-atmosphere-caption strong {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.km2-primary-card header strong,
+.km2-atmosphere-caption strong {
+  color: #fff;
+}
+
+.km2-primary-list {
+  align-content: stretch;
+  gap: 10px;
+}
+
+.km2-primary {
+  grid-template-columns: 36px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  min-height: 0;
+  padding: 10px;
+  gap: 8px 10px;
+  border-radius: 16px;
+}
+
+.km2-primary > i {
+  grid-column: 1 / 3;
+  width: 100%;
+}
+
+.km2-primary strong {
+  font-size: clamp(1.35rem, 1.75vw, 2rem);
+}
+
+.km2-atmosphere {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  padding: clamp(18px, 1.7vw, 30px);
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.km2-liquid-air {
+  width: min(100%, 500px);
+  max-height: 100%;
+}
+
+.km2-atmosphere-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.09);
+}
+
+.km2-metrics {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: clamp(10px, 0.85vw, 14px);
+}
+
+.km2-tile {
+  padding: clamp(13px, 1.05vw, 18px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.km2-tile header span {
+  max-width: 100%;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.km2-glyph {
+  width: 34px;
+  height: 34px;
+  padding: 7px;
+  border-radius: 12px;
+}
+
+.km2-value {
+  align-self: end;
+  font-size: clamp(2.2rem, 3.45vw, 4.5rem);
+  line-height: 0.88;
+}
+
+.km2-meter {
+  position: relative;
+  height: 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.045)),
+    rgba(255,255,255,0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    inset 0 -9px 18px rgba(0,0,0,0.2);
+}
+
+.km2-meter::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,0.1) 24px 25px);
+  opacity: 0.45;
+}
+
+.km2-meter span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  min-width: 13px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 45%, white));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 42%, transparent);
+  transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.km2-meter i {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent) 65%, transparent);
+  transform: translate(-50%, -50%);
+  transition: left 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (max-width: 1180px) {
+  .km2-board {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .km2-hero,
+  .km2-primary-card,
+  .km2-atmosphere,
+  .km2-metrics {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 900px) {
+  .km2-hero-copy strong {
+    font-size: clamp(2.8rem, 4.1vw, 4.8rem);
+  }
+
+  .km2-primary {
+    padding: 8px;
+  }
+
+  .km2-value {
+    font-size: clamp(1.9rem, 3vw, 3.7rem);
+  }
+
+  .km2-glyph {
+    width: 31px;
+    height: 31px;
+  }
+}
+
+/* Kiosk main without the ambience panel: all space goes to readable telemetry. */
+.km2-shell {
+  padding-bottom: clamp(26px, 2.2vw, 42px);
+}
+
+.km2-header {
+  height: clamp(90px, 9.6dvh, 122px);
+  padding-bottom: clamp(10px, 1vw, 18px);
+}
+
+.km2-board {
+  height: calc(100dvh - clamp(128px, 12.4dvh, 166px));
+  grid-template-columns: clamp(300px, 22vw, 420px) minmax(0, 1fr);
+  grid-template-rows: minmax(220px, 0.58fr) minmax(0, 1fr);
+}
+
+.km2-hero {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.km2-primary-card {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.km2-metrics {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.km2-tile {
+  min-height: 0;
+}
+
+.km2-value {
+  align-self: center;
+  font-size: clamp(2.4rem, 4.2vw, 5.8rem);
+}
+
+.km2-meter {
+  height: 15px;
+}
+
+@media (max-width: 1180px) {
+  .km2-board {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .km2-hero,
+  .km2-primary-card,
+  .km2-metrics {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 900px) {
+  .km2-shell {
+    padding-bottom: 18px;
+  }
+
+  .km2-header {
+    height: 84px;
+    padding-bottom: 8px;
+  }
+
+  .km2-board {
+    height: calc(100dvh - 104px);
+    grid-template-columns: clamp(270px, 20vw, 360px) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .km2-metrics {
+    gap: 10px;
+  }
+
+  .km2-tile {
+    padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .km2-shell *,
+  .km2-shell *::before,
+  .km2-shell *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

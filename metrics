@@ -1,0 +1,62 @@
+# HELP airgradient_info AirGradient device information
+# TYPE airgradient_info info
+airgradient_info{airgradient_serial_number="d83bda1bca7c",airgradient_device_type="ONE_INDOOR",airgradient_library_version="3.6.2"} 1
+# HELP airgradient_config_ok 1 if the AirGradient device was able to successfully fetch its configuration from the server
+# TYPE airgradient_config_ok gauge
+airgradient_config_ok{} 1
+# HELP airgradient_post_ok 1 if the AirGradient device was able to successfully send to the server
+# TYPE airgradient_post_ok gauge
+airgradient_post_ok{} 1
+# HELP airgradient_wifi_rssi_dbm WiFi signal strength from the AirGradient device perspective, in dBm
+# TYPE airgradient_wifi_rssi_dbm gauge
+# UNIT airgradient_wifi_rssi_dbm dbm
+airgradient_wifi_rssi_dbm{} -40
+# HELP airgradient_pm1_ugm3 PM1.0 concentration as measured by the AirGradient PMS sensor, in micrograms per cubic meter
+# TYPE airgradient_pm1_ugm3 gauge
+# UNIT airgradient_pm1_ugm3 ugm3
+airgradient_pm1_ugm3{} 20
+# HELP airgradient_pm2d5_ugm3 PM2.5 concentration as measured by the AirGradient PMS sensor, in micrograms per cubic meter
+# TYPE airgradient_pm2d5_ugm3 gauge
+# UNIT airgradient_pm2d5_ugm3 ugm3
+airgradient_pm2d5_ugm3{} 25
+# HELP airgradient_pm10_ugm3 PM10 concentration as measured by the AirGradient PMS sensor, in micrograms per cubic meter
+# TYPE airgradient_pm10_ugm3 gauge
+# UNIT airgradient_pm10_ugm3 ugm3
+airgradient_pm10_ugm3{} 25
+# HELP airgradient_pm0d3_p100ml PM0.3 concentration as measured by the AirGradient PMS sensor, in number of particules per 100 milliliters
+# TYPE airgradient_pm0d3_p100ml gauge
+# UNIT airgradient_pm0d3_p100ml p100ml
+airgradient_pm0d3_p100ml{} 1139
+# HELP airgradient_tvoc_index The processed Total Volatile Organic Compounds (TVOC) index as measured by the AirGradient SGP sensor
+# TYPE airgradient_tvoc_index gauge
+airgradient_tvoc_index{} 191
+# HELP airgradient_tvoc_raw The raw input value to the Total Volatile Organic Compounds (TVOC) index as measured by the AirGradient SGP sensor
+# TYPE airgradient_tvoc_raw gauge
+airgradient_tvoc_raw{} 31537
+# HELP airgradient_nox_index The processed Nitrogen Oxide (NOx) index as measured by the AirGradient SGP sensor
+# TYPE airgradient_nox_index gauge
+airgradient_nox_index{} 1
+# HELP airgradient_nox_raw The raw input value to the Nitrogen Oxide (NOx) index as measured by the AirGradient SGP sensor
+# TYPE airgradient_nox_raw gauge
+airgradient_nox_raw{} 17471
+# HELP airgradient_co2_ppm Carbon dioxide concentration as measured by the AirGradient S8 sensor, in parts per million
+# TYPE airgradient_co2_ppm gauge
+# UNIT airgradient_co2_ppm ppm
+airgradient_co2_ppm{} 490
+# HELP airgradient_temperature_celsius The ambient temperature as measured by the AirGradient SHT / PMS sensor, in degrees Celsius
+# TYPE airgradient_temperature_celsius gauge
+# UNIT airgradient_temperature_celsius celsius
+airgradient_temperature_celsius{} 25.20
+# HELP airgradient_temperature_compensated_celsius The compensated ambient temperature as measured by the AirGradient SHT / PMS sensor, in degrees Celsius
+# TYPE airgradient_temperature_compensated_celsius gauge
+# UNIT airgradient_temperature_compensated_celsius celsius
+airgradient_temperature_compensated_celsius{} 25
+# HELP airgradient_humidity_percent The relative humidity as measured by the AirGradient SHT sensor
+# TYPE airgradient_humidity_percent gauge
+# UNIT airgradient_humidity_percent percent
+airgradient_humidity_percent{} 59.66
+# HELP airgradient_humidity_compensated_percent The compensated relative humidity as measured by the AirGradient SHT / PMS sensor
+# TYPE airgradient_humidity_compensated_percent gauge
+# UNIT airgradient_humidity_compensated_percent percent
+airgradient_humidity_compensated_percent{} 60
+# EOF

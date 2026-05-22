@@ -27,11 +27,11 @@ const VARIANT: Record<string, Variant> = {
 // Accent hue shown when status is "empty" / for icon coloring
 const BASE_COLOR: Record<string, string> = {
   co2:         "var(--c-info)",
-  pm25:        "#f59e0b",
-  temperature: "#f43f5e",
-  humidity:    "#60a5fa",
-  voc:         "#a78bfa",
-  nox:         "#fb923c",
+  pm25:        "var(--metric-pm25)",
+  temperature: "var(--metric-temperature)",
+  humidity:    "var(--metric-humidity)",
+  voc:         "var(--metric-voc)",
+  nox:         "var(--metric-nox)",
 };
 
 // SVG icons — each renders at transform="translate(CX, CY-32)"
@@ -175,7 +175,7 @@ export function GaugeMetric(props: Props) {
           <Show when={variant() === "arc"}>
             <circle
               cx={CX} cy={CY} r={R}
-              stroke="rgba(100,160,255,0.08)"
+              stroke="color-mix(in srgb, var(--c-info) 10%, transparent)"
               stroke-width="12"
               stroke-dasharray={`${ARC} ${CIRC - ARC}`}
               stroke-linecap="round"
@@ -228,7 +228,7 @@ export function GaugeMetric(props: Props) {
             {/* outer ring of dots */}
             <circle
               cx={CX} cy={CY} r={R + 8}
-              stroke="rgba(100,160,255,0.12)"
+              stroke="color-mix(in srgb, var(--c-info) 14%, transparent)"
               stroke-width="3"
               stroke-dasharray="2 10.4"
               stroke-linecap="round"
@@ -237,7 +237,7 @@ export function GaugeMetric(props: Props) {
             {/* inner dim arc track */}
             <circle
               cx={CX} cy={CY} r={R}
-              stroke="rgba(100,160,255,0.06)"
+              stroke="color-mix(in srgb, var(--c-info) 8%, transparent)"
               stroke-width="10"
               stroke-dasharray={`${ARC} ${CIRC - ARC}`}
               stroke-linecap="round"

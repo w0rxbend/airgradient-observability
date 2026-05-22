@@ -11,12 +11,11 @@ import { StatusPill } from "./StatusPill";
 
 type Props = { metrics: CurrentMetric[] };
 
-// Raw hex so we can build CSS gradients without `var()`
-const ACCENT_HEX: Record<Status, string> = {
-  good:     "#22c55e",
-  warning:  "#f59e0b",
-  critical: "#ef4444",
-  empty:    "#475569",
+const ACCENT_COLOR: Record<Status, string> = {
+  good:     "var(--c-good)",
+  warning:  "var(--c-warning)",
+  critical: "var(--c-critical)",
+  empty:    "var(--c-muted)",
 };
 
 const STATUS_ICON: Record<Status, string> = {
@@ -36,7 +35,7 @@ const STATUS_DESC: Record<Status, string> = {
 export function AirQualityScore(props: Props) {
   const score  = createMemo(() => overallScore(props.metrics.map((m) => ({ status: m.status as Status }))));
   const status = createMemo(() => scoreStatus(score()));
-  const hex    = createMemo(() => ACCENT_HEX[status()]);
+  const color  = createMemo(() => ACCENT_COLOR[status()]);
 
   const recommendation = createMemo(() =>
     airQualityRecommendation(props.metrics.map((m) => ({ key: m.key, status: m.status as Status })))
@@ -46,34 +45,40 @@ export function AirQualityScore(props: Props) {
     <div
       class="aq-hero"
       style={{
-        background: `linear-gradient(145deg, ${hex()}28 0%, ${hex()}0c 55%, transparent 100%)`,
-        "border-top": `1px solid ${hex()}30`,
+        background: `linear-gradient(145deg, color-mix(in srgb, ${color()} 16%, transparent) 0%, color-mix(in srgb, ${color()} 5%, transparent) 55%, transparent 100%)`,
+        "border-top": `1px solid color-mix(in srgb, ${color()} 22%, transparent)`,
       }}
     >
       {/* Decorative glow blob */}
       <div
         class="aq-hero-blob"
         style={{
-          background: `radial-gradient(circle, ${hex()}55 0%, transparent 70%)`,
+          background: `radial-gradient(circle, color-mix(in srgb, ${color()} 34%, transparent) 0%, transparent 70%)`,
         }}
       />
 
       {/* Header row */}
       <div class="aq-hero-header">
         <span class="aq-hero-eyebrow">AQI Score</span>
-        <div class="aq-hero-icon-wrap" style={{ background: `${hex()}22`, "border-color": `${hex()}40` }}>
+        <div
+          class="aq-hero-icon-wrap"
+          style={{
+            background: `color-mix(in srgb, ${color()} 14%, transparent)`,
+            "border-color": `color-mix(in srgb, ${color()} 25%, transparent)`,
+          }}
+        >
           <span class="aq-hero-icon">{STATUS_ICON[status()]}</span>
         </div>
       </div>
 
       {/* Score */}
       <div class="aq-hero-score-row">
-        <span class="aq-hero-score" style={{ color: hex() }}>
+        <span class="aq-hero-score" style={{ color: color() }}>
           {score()}
         </span>
         <div class="aq-hero-score-meta">
           <span class="aq-hero-max">/100</span>
-          <span class="aq-hero-desc" style={{ color: hex() }}>
+          <span class="aq-hero-desc" style={{ color: color() }}>
             {STATUS_DESC[status()]}
           </span>
         </div>

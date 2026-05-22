@@ -11,20 +11,25 @@ import {
 import { GaugeMetric } from "../components/GaugeMetric";
 import { TimeSeriesChart } from "../components/TimeSeriesChart";
 import { GaugeSkeleton, ChartSkeleton } from "../components/LoadingSkeleton";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { fetchCurrent, fetchAllRanges } from "../lib/backend";
 
 const METRIC_COLORS = [
   "var(--c-info)",
-  "#f59e0b",
-  "#a78bfa",
-  "#fb923c",
-  "#f43f5e",
-  "#60a5fa",
+  "var(--metric-pm25)",
+  "var(--metric-voc)",
+  "var(--metric-nox)",
+  "var(--metric-temperature)",
+  "var(--metric-humidity)",
 ];
 
 const REFRESH_MS = 5_000;
 
 export default function Kiosk() {
+  return <KioskView />;
+}
+
+export function KioskView(props: { oled?: boolean }) {
   const [tick, setTick] = createSignal(0);
 
   const timer = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
@@ -56,7 +61,7 @@ export default function Kiosk() {
   });
 
   return (
-    <div class="kiosk">
+    <div class={props.oled ? "kiosk kiosk-oled" : "kiosk"}>
       {/* ── Gauges ─────────────────────────────────────────────── */}
       <Switch>
         <Match when={current.loading && !current()}>
@@ -102,7 +107,7 @@ export default function Kiosk() {
 
       {/* ── Footer ─────────────────────────────────────────────── */}
       <footer class="kiosk-footer">
-        <span class="kiosk-brand">🌿 AirGradient</span>
+        <span class="kiosk-brand">🌿 AirGradient{props.oled ? " OLED" : ""}</span>
         <span class="kiosk-status">
           <Show when={current() && !current.error}>
             <span class="status-strip-dot" style={{ "margin-right": "6px" }} />
@@ -115,7 +120,12 @@ export default function Kiosk() {
           {" · "}
           Refreshes every {REFRESH_MS / 1000}s
         </span>
-        <span class="kiosk-clock">{clock()}</span>
+        <span class="kiosk-footer-actions">
+          <Show when={!props.oled}>
+            <ThemeToggle />
+          </Show>
+          <span class="kiosk-clock">{clock()}</span>
+        </span>
       </footer>
     </div>
   );

@@ -15,6 +15,7 @@ import { TimeSeriesChart } from "../components/TimeSeriesChart";
 import { AirQualityScore } from "../components/AirQualityScore";
 import { AirQualityHeatmap } from "../components/AirQualityHeatmap";
 import { GaugeSkeleton, ChartSkeleton } from "../components/LoadingSkeleton";
+import { ThemeToggle } from "../components/ThemeToggle";
 import {
   fetchCurrent,
   fetchAllRanges,
@@ -24,17 +25,17 @@ import {
 
 const METRIC_COLORS = [
   "var(--c-info)",
-  "#f59e0b",
-  "#a78bfa",
-  "#fb923c",
-  "#f43f5e",
-  "#60a5fa",
+  "var(--metric-pm25)",
+  "var(--metric-voc)",
+  "var(--metric-nox)",
+  "var(--metric-temperature)",
+  "var(--metric-humidity)",
 ];
 
 const METRIC_DISPLAY = [
   {
     key: "temperature",
-    color: "#f43f5e",
+    color: "var(--metric-temperature)",
     icon: () => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <rect x="10" y="2" width="4" height="13" rx="2" />
@@ -45,7 +46,7 @@ const METRIC_DISPLAY = [
   },
   {
     key: "humidity",
-    color: "#60a5fa",
+    color: "var(--metric-humidity)",
     icon: () => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M12 2C10 7 4 12 4 16a8 8 0 0016 0c0-4-6-9-8-14z" />
@@ -63,7 +64,7 @@ const METRIC_DISPLAY = [
   },
   {
     key: "pm25",
-    color: "#f59e0b",
+    color: "var(--metric-pm25)",
     icon: () => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <circle cx="7"  cy="8"  r="3"   opacity="0.9" />
@@ -155,6 +156,7 @@ export default function Dashboard() {
           </div>
         </div>
         <div class="topbar-actions">
+          <ThemeToggle />
           <a href="/api/healthz" class="api-link" aria-label="Backend health check">
             Backend status
           </a>

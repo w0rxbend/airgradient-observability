@@ -1,33 +1,83 @@
 # AirGradient Backend
 
-Small Gin API that proxies VictoriaMetrics through the Prometheus-compatible API and caches normalized responses.
+Go + Gin API service that queries VictoriaMetrics and returns normalized AirGradient metrics.
+
+For full production docs, see:
+
+- `../../docs/backend.md`
+- `../../docs/api.md`
+- `../../docs/configuration.md`
+- `../../docs/metrics.md`
+
+## Run
 
 ```bash
-cd app/backend
-go mod download
+go run ./cmd/server
+```
+
+Default:
+
+```text
+ADDR=:8080
+VM_URL=http://localhost:8428
+```
+
+Run against local VictoriaMetrics:
+
+```bash
 VM_URL=http://localhost:8428 go run ./cmd/server
 ```
 
-Endpoints:
+Run against VictoriaMetrics through authenticated Nginx:
 
-- `GET /healthz`
-- `GET /api/metrics/current`
-- `GET /api/metrics/range?metric=co2&range=24h&step=60s`
+```bash
+VM_URL=https://YOUR_DOMAIN/victoriametrics \
+VM_USER=airgradient \
+VM_PASSWORD='CHANGE_ME' \
+go run ./cmd/server
+```
 
-Important environment variables:
+## Endpoints
 
-- `ADDR`, default `:8080`
-- `VM_URL`, default `http://localhost:8428`
-- `VM_USER`, optional Basic Auth username
-- `VM_PASSWORD`, optional Basic Auth password
-- `AIRGRADIENT_LABEL_FILTER`, default `{device="airgradient_one"}`
-- `CACHE_TTL`, default `10s`
-- `RANGE_CACHE_TTL`, default `30s`
-- `VM_QUERY_TIMEOUT`, default `10s`
-- `ALLOWED_ORIGIN`, default `http://localhost:3000`
-- `METRIC_CO2`, default `airgradient_co2_ppm`
-- `METRIC_PM25`, default `airgradient_pm2d5_ugm3`
-- `METRIC_VOC`, default `airgradient_tvoc_index`
-- `METRIC_NOX`, default `airgradient_nox_index`
-- `METRIC_TEMPERATURE`, default `airgradient_temperature_degc`
-- `METRIC_HUMIDITY`, default `airgradient_humidity_percent`
+```http
+GET /healthz
+GET /api/healthz
+GET /api/metrics/current
+GET /api/metrics/range?metric=co2&range=24h&step=60s
+GET /api/metrics/range-absolute?metric=co2&from=<ms>&to=<ms>&step=5m
+```
+
+## Important Environment Variables
+
+```env
+ADDR=:8080
+VM_URL=http://localhost:8428
+VM_USER=
+VM_PASSWORD=
+VM_QUERY_TIMEOUT=10s
+AIRGRADIENT_LABEL_FILTER={device="airgradient_one"}
+CACHE_TTL=10s
+RANGE_CACHE_TTL=30s
+ALLOWED_ORIGIN=http://localhost:3000
+METRIC_CO2=airgradient_co2_ppm
+METRIC_PM25=airgradient_pm2d5_ugm3
+METRIC_VOC=airgradient_tvoc_index
+METRIC_NOX=airgradient_nox_index
+METRIC_TEMPERATURE=airgradient_temperature_celsius
+METRIC_HUMIDITY=airgradient_humidity_percent
+```
+
+## Checks
+
+```bash
+go test ./...
+```
+
+There are currently no unit tests; this command verifies compilation across packages.
+
+## Docker
+
+```bash
+docker build -t airgradient-backend .
+docker run --rm -p 8080:8080 -e VM_URL=http://host.docker.internal:8428 airgradient-backend
+```

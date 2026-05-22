@@ -1,14 +1,20 @@
 # API Reference
 
-The Go backend owns the public app API.
+The Go backend owns the public JSON API. In production, Nginx proxies `/api/` to the backend.
 
-Base URL in local backend development:
+Local base URL:
 
 ```text
 http://localhost:8080
 ```
 
-In production, Nginx should proxy `/api/` to the backend so browser calls can stay same-origin.
+Production base URL:
+
+```text
+https://YOUR_DOMAIN
+```
+
+Production examples include Basic Auth because the current Nginx config protects `/api/`.
 
 ## Health
 
@@ -17,7 +23,7 @@ GET /healthz
 GET /api/healthz
 ```
 
-`/healthz` is mainly useful inside the Docker network or when running the backend directly. `/api/healthz` is available through the reverse proxy.
+`/healthz` is useful inside the Docker network or when running the backend directly. `/api/healthz` is useful through Nginx.
 
 Response:
 
@@ -25,10 +31,25 @@ Response:
 {"status":"ok"}
 ```
 
+Example:
+
+```bash
+curl -u airgradient:'CHANGE_ME' 'https://YOUR_DOMAIN/api/healthz'
+```
+
 ## Current Metrics
 
 ```http
 GET /api/metrics/current
+```
+
+Returns one object for each configured normalized metric.
+
+Example:
+
+```bash
+curl -u airgradient:'CHANGE_ME' \
+  'https://YOUR_DOMAIN/api/metrics/current'
 ```
 
 Response:
@@ -43,9 +64,9 @@ Response:
       "value": 612,
       "timestamp": 1710000000000,
       "min": 400,
-      "max": 2000,
-      "goodBelow": 800,
-      "warnBelow": 1200,
+      "max": 3000,
+      "goodBelow": 801,
+      "warnBelow": 1501,
       "status": "good"
     }
   ],
@@ -54,26 +75,38 @@ Response:
 }
 ```
 
-Valid statuses:
+Field notes:
 
-- `good`
-- `warning`
-- `critical`
-- `empty`
+| Field | Meaning |
+|---|---|
+| `metrics` | ordered list from backend metric catalog |
+| `value` | current value, or `null` when no series/sample exists |
+| `timestamp` | Unix timestamp in milliseconds, or `null` |
+| `min` / `max` | display range metadata |
+| `goodBelow` / `warnBelow` | optional threshold metadata |
+| `status` | `good`, `warning`, `critical`, or `empty` |
+| `cached` | `true` when served from backend process cache |
 
-## Range Metrics
+## Relative Range
 
 ```http
 GET /api/metrics/range?metric=co2&range=24h&step=60s
 ```
 
-Query params:
+Query parameters:
 
-| Param | Default | Valid examples |
-|---|---:|---|
-| `metric` | `co2` | `co2`, `pm25`, `voc`, `nox`, `temperature`, `humidity` |
-| `range` | `24h` | `1h`, `6h`, `24h`, `7d`, `30d` |
-| `step` | `60s` | `15s`, `60s`, `5m`, `15m`, `1h` |
+| Parameter | Default | Validation | Examples |
+|---|---|---|---|
+| `metric` | `co2` | configured metric key | `co2`, `pm25`, `voc`, `nox`, `temperature`, `humidity` |
+| `range` | `24h` | `^\d+[hd]$` | `1h`, `6h`, `24h`, `7d`, `30d`, `90d` |
+| `step` | `60s` | `^\d+[smh]$` | `30s`, `60s`, `5m`, `1h` |
+
+Example:
+
+```bash
+curl -u airgradient:'CHANGE_ME' \
+  'https://YOUR_DOMAIN/api/metrics/range?metric=co2&range=24h&step=5m'
+```
 
 Response:
 
@@ -83,26 +116,88 @@ Response:
   "label": "CO2",
   "unit": "ppm",
   "range": "24h",
-  "step": "60s",
+  "step": "5m",
   "points": [[1710000000000, 610]],
   "cached": false
 }
 ```
 
-## Errors
+`points` is an array of `[timestampMs, value]`.
 
-VictoriaMetrics errors are returned as `502`:
+## Absolute Range
 
-```json
-{"error":"Post \"http://localhost:8428/api/v1/query\": dial tcp [::1]:8428: connect: connection refused"}
+```http
+GET /api/metrics/range-absolute?metric=co2&from=1710000000000&to=1710086400000&step=5m
 ```
 
-Implemented hardening:
+Query parameters:
 
-- invalid metric/range/step returns `400`
-- backend VictoriaMetrics query timeout returns `504`
+| Parameter | Required | Validation | Meaning |
+|---|---:|---|---|
+| `metric` | no | configured metric key | defaults to `co2` |
+| `from` | yes | Unix milliseconds | inclusive start time |
+| `to` | yes | Unix milliseconds | end time; must be greater than `from` |
+| `step` | no | `^\d+[smh]$` | defaults to `5m` |
 
-Planned API hardening:
+Example:
 
-- stale cache fallback
-- `X-Cache` response headers
+```bash
+curl -u airgradient:'CHANGE_ME' \
+  'https://YOUR_DOMAIN/api/metrics/range-absolute?metric=pm25&from=1710000000000&to=1710086400000&step=5m'
+```
+
+Response shape matches the relative range endpoint. The `range` field is formatted as:
+
+```text
+<fromMs>-<toMs>
+```
+
+## Metrics
+
+Supported metric keys:
+
+| Key | Label | Unit |
+|---|---|---|
+| `co2` | `CO2` | `ppm` |
+| `pm25` | `PM2.5` | `ug/m3` |
+| `voc` | `TVOC` | `index` |
+| `nox` | `NOx` | `index` |
+| `temperature` | `Temperature` | `C` |
+| `humidity` | `Humidity` | `%` |
+
+## Errors
+
+Error response:
+
+```json
+{"error":"invalid metric: unknown"}
+```
+
+Status codes:
+
+| Status | Meaning |
+|---:|---|
+| `400` | invalid metric, range, step, or absolute time range |
+| `502` | VictoriaMetrics returned an error or unexpected warning |
+| `504` | VictoriaMetrics query timeout |
+
+Examples:
+
+```bash
+curl -i 'http://localhost:8080/api/metrics/range?metric=unknown'
+curl -i 'http://localhost:8080/api/metrics/range?metric=co2&range=bad'
+curl -i 'http://localhost:8080/api/metrics/range-absolute?from=2&to=1'
+```
+
+## Caching
+
+The backend response body includes a `cached` boolean. It does not currently set `X-Cache` headers.
+
+Default TTLs:
+
+- current metrics: `10s`
+- range metrics: `30s`
+
+## Compatibility Notes
+
+The API is intentionally small and stable. If multiple AirGradient devices are added, the current API must change or receive an additional device/location selector because the backend currently rejects multi-series query results.

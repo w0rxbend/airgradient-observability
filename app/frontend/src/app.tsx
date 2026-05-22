@@ -5,6 +5,7 @@ import Kiosk from "./routes/kiosk";
 import KioskMain from "./routes/kiosk-main";
 import KioskOled from "./routes/kiosk-oled";
 import KioskSwag from "./routes/kiosk-swag";
+import KioskGauges from "./routes/kiosk-gauges";
 import { applyTheme, theme } from "./lib/theme";
 import "./global.css";
 
@@ -18,6 +19,7 @@ export default function App() {
       <Route path="/kiosk-main" component={KioskMain} />
       <Route path="/kiosk-oled" component={KioskOled} />
       <Route path="/kiosk-swag" component={KioskSwag} />
+      <Route path="/kiosk-gauges" component={KioskGauges} />
     </Router>
   );
 }

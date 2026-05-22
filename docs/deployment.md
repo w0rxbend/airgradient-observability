@@ -1,114 +1,227 @@
 # Deployment
 
-Read first:
+This guide deploys the non-frontend observability stack: LAN `vmagent`, OCI Nginx, VictoriaMetrics, Grafana, and the Go backend. The Compose stack also starts the frontend service because Nginx routes `/` to it, but frontend implementation is not covered here.
 
-- [Configuration](configuration.md)
-- [Architecture](architecture.md)
-- [Security](security.md)
-- [Troubleshooting](troubleshooting.md)
+## Prerequisites
 
-## OCI
+OCI host:
 
-1. Point `YOUR_DOMAIN` at the OCI VM and use it as `DOMAIN` for Compose.
-2. Put TLS certificates under:
+- public DNS record such as `metrics.example.com`
+- Docker Engine with Compose v2
+- inbound firewall allowing `80/tcp` and `443/tcp`
+- persistent disk capacity for VictoriaMetrics retention
+- TLS certificate files available under `infra/oci/certs`
+
+LAN edge host:
+
+- Docker Engine with Compose v2
+- network reachability to `http://airgradient_xxx.local:80/metrics`
+- outbound HTTPS reachability to the OCI domain
+- enough disk for `vmagent` retry buffer
+
+Workstation:
+
+- repository checkout
+- ability to copy files to both hosts
+
+## 1. Prepare DNS And TLS
+
+Point the production domain at the OCI host:
+
+```text
+metrics.example.com -> OCI public IP
+```
+
+Place certificates on the OCI host:
 
 ```text
 infra/oci/certs/fullchain.pem
 infra/oci/certs/privkey.pem
 ```
 
-3. Create an htpasswd file for containerized Nginx:
+Nginx expects those exact paths inside `infra/oci`.
+
+## 2. Create Basic Auth Credentials
+
+Create `infra/oci/.htpasswd`:
 
 ```bash
 cd infra/oci
 docker run --rm httpd:2.4-alpine htpasswd -Bbn airgradient 'CHANGE_ME' > .htpasswd
 ```
 
-4. Start the stack:
+Use a strong password. This credential protects remote write, the backend API, Grafana, and direct VictoriaMetrics debug access in the current Nginx config.
+
+## 3. Configure Edge Scraping
+
+Edit `infra/edge/prometheus.yml`:
+
+```yaml
+targets:
+  - airgradient_xxx.local:80
+labels:
+  location: home
+  device: airgradient_one
+```
+
+Recommendations:
+
+- use a static DHCP lease or stable hostname for the sensor
+- keep `device` aligned with `AIRGRADIENT_LABEL_FILTER`
+- set `location` to a meaningful stable value such as `living_room` or `office`
+
+Verify the sensor from the edge host:
+
+```bash
+curl -fsS 'http://airgradient_xxx.local/metrics' | head
+```
+
+## 4. Start The OCI Stack
+
+From the OCI host:
 
 ```bash
 cd infra/oci
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml up -d
+DOMAIN=metrics.example.com docker compose -f docker-compose.vm.yml up -d
 ```
 
-The stack starts Nginx, VictoriaMetrics, Grafana, the Go backend, and the Solid frontend. Nginx publishes `80` and `443`; the other services stay private inside the Docker network.
+Check status:
 
-Grafana provisions:
+```bash
+docker compose -f docker-compose.vm.yml ps
+docker compose -f docker-compose.vm.yml logs --tail=100 nginx
+docker compose -f docker-compose.vm.yml logs --tail=100 victoriametrics
+docker compose -f docker-compose.vm.yml logs --tail=100 backend
+```
 
-- datasource: `infra/oci/grafana/datasource.yml`
-- dashboards provider: `infra/oci/grafana/dashboard.yml`
-- dashboard JSON files from `dashboards/`
+Validate Nginx config if startup fails:
 
-## LAN Edge
+```bash
+docker compose -f docker-compose.vm.yml run --rm nginx \
+  /bin/sh -c "envsubst '\$DOMAIN' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -t"
+```
 
-1. Replace `airgradient_xxx.local:80` in `infra/edge/prometheus.yml`.
-2. Set `DOMAIN=YOUR_DOMAIN` when starting vmagent.
-3. Start vmagent:
+## 5. Start The Edge Collector
+
+From the LAN edge host:
 
 ```bash
 cd infra/edge
-DOMAIN=YOUR_DOMAIN VM_USER=... VM_PASSWORD=... docker compose -f docker-compose.vmagent.yml up -d
-```
-
-## Backend Proxy
-
-```bash
-cd app/backend
-VM_URL=http://localhost:8428 go run ./cmd/server
-```
-
-The backend exposes:
-
-```http
-GET /healthz
-GET /api/healthz
-GET /api/metrics/current
-GET /api/metrics/range?metric=co2&range=24h&step=60s
-```
-
-It caches current metrics for `CACHE_TTL` and range data for `RANGE_CACHE_TTL`.
-
-## Solid Frontend
-
-```bash
-cd app/frontend
-npm install
-BACKEND_URL=http://localhost:8080 npm run dev
-```
-
-The SolidStart dev server proxies same-origin `/api/...` requests to `BACKEND_URL`.
-
-For a remote VictoriaMetrics endpoint protected with Basic Auth, configure the backend:
-
-```bash
-VM_URL=https://YOUR_DOMAIN/victoriametrics \
+DOMAIN=metrics.example.com \
 VM_USER=airgradient \
-VM_PASSWORD=... \
-go run ./cmd/server
+VM_PASSWORD='CHANGE_ME' \
+docker compose -f docker-compose.vmagent.yml up -d
 ```
 
-## Verification
+Check logs:
 
-Check whether VictoriaMetrics has samples:
+```bash
+docker compose -f docker-compose.vmagent.yml logs -f vmagent
+```
+
+`vmagent` should scrape locally and remote-write to:
+
+```text
+https://metrics.example.com/api/v1/write
+```
+
+## 6. Verify Ingestion
+
+On the OCI host, query VictoriaMetrics directly inside the Docker network:
 
 ```bash
 cd infra/oci
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml exec victoriametrics wget -qO- 'http://localhost:8428/api/v1/query?query=airgradient_co2_ppm'
+docker compose -f docker-compose.vm.yml exec victoriametrics \
+  wget -qO- 'http://localhost:8428/api/v1/query?query=airgradient_co2_ppm'
 ```
 
-Check the backend API:
+List stored metric names:
 
 ```bash
-curl -u airgradient:CHANGE_ME 'https://YOUR_DOMAIN/api/metrics/current'
+docker compose -f docker-compose.vm.yml exec victoriametrics \
+  wget -qO- 'http://localhost:8428/api/v1/label/__name__/values'
 ```
 
-If queries are empty, inspect the vmagent logs and verify the exact metric names emitted by the AirGradient firmware.
+Expected AirGradient names include:
 
-## Next Production Tasks
+```text
+airgradient_co2_ppm
+airgradient_pm2d5_ugm3
+airgradient_tvoc_index
+airgradient_nox_index
+airgradient_temperature_celsius
+airgradient_humidity_percent
+```
 
-- Replace `YOUR_DOMAIN`.
-- Configure TLS certificates.
-- Create the Basic Auth htpasswd file.
-- Confirm real AirGradient metric names.
-- Decide backup/snapshot strategy for `vmdata`.
-- Pin Docker image versions once the stack is stable.
+## 7. Verify Backend API
+
+Through public Nginx:
+
+```bash
+curl -u airgradient:'CHANGE_ME' \
+  'https://metrics.example.com/api/healthz'
+
+curl -u airgradient:'CHANGE_ME' \
+  'https://metrics.example.com/api/metrics/current'
+
+curl -u airgradient:'CHANGE_ME' \
+  'https://metrics.example.com/api/metrics/range?metric=co2&range=24h&step=60s'
+```
+
+Inside the OCI Docker network:
+
+```bash
+cd infra/oci
+docker compose -f docker-compose.vm.yml exec backend \
+  wget -qO- 'http://localhost:8080/healthz'
+```
+
+## 8. Verify Grafana
+
+Open:
+
+```text
+https://metrics.example.com/grafana/
+```
+
+Then check:
+
+- datasource `VictoriaMetrics` exists and is default
+- folder `AirGradient` exists
+- dashboard panels have data
+- variables `device` and `location` populate
+
+## Production Readiness Checklist
+
+Before relying on this stack:
+
+- replace all placeholder domain and password values
+- confirm real AirGradient metric names from VictoriaMetrics
+- confirm `device` and `location` labels are present
+- pin Docker image versions
+- define backup/snapshot policy for `vmdata` and `grafanadata`
+- decide whether `/victoriametrics/` should remain publicly routed
+- create a restore drill for VictoriaMetrics data
+- add monitoring or alerts for stale samples and failed remote writes
+- record operating passwords and certificate renewal steps in your secret-management system
+
+## Updating A Deployment
+
+Pull new repository changes, review diffs, then:
+
+```bash
+cd infra/oci
+DOMAIN=metrics.example.com docker compose -f docker-compose.vm.yml up -d --build
+```
+
+For edge config changes:
+
+```bash
+cd infra/edge
+DOMAIN=metrics.example.com \
+VM_USER=airgradient \
+VM_PASSWORD='CHANGE_ME' \
+docker compose -f docker-compose.vmagent.yml up -d
+```
+
+Use [Operations](operations.md) for routine checks after updates.

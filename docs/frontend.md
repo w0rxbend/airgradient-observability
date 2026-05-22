@@ -1,52 +1,14 @@
-# Frontend App
+# Frontend
 
-The frontend is a SolidStart app in `app/frontend`.
+Frontend implementation is intentionally out of scope for this documentation set.
 
-It renders:
+The repository contains `app/frontend`, and the OCI Compose stack starts a frontend service because Nginx routes `/` to it. For this production documentation pass, treat the frontend as a consumer of the Go backend API only.
 
-- current AirGradient display-style gauges
-- CO2, PM2.5, VOC, NOx, temperature, and humidity
-- historical chart by selected metric and time range
+Relevant non-frontend contracts:
 
-## Run Locally
+- backend API: [API Reference](api.md)
+- backend behavior: [Backend](backend.md)
+- Nginx routing: [Architecture](architecture.md)
+- deployment service layout: [Deployment](deployment.md)
 
-```bash
-cd app/frontend
-npm install
-BACKEND_URL=http://localhost:8080 npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000/
-```
-
-## API Boundary
-
-The browser only calls the SolidStart same-origin API routes:
-
-```http
-GET /api/metrics/current
-GET /api/metrics/range?metric=co2&range=24h&step=60s
-```
-
-SolidStart proxies those requests to the Go backend with the server-only `BACKEND_URL` environment variable. Browser code does not know VictoriaMetrics credentials or backend topology.
-
-## Build
-
-```bash
-cd app/frontend
-npm run typecheck
-npm run build
-```
-
-## Styling Direction
-
-The current UI combines:
-
-- Vercel-like density and typography
-- shadcn-like borders, controls, and restrained cards
-- Diia-inspired blue/yellow accents
-
-The UI should stay dashboard-first: compact, scan-friendly, and useful without a landing page.
+Do not use this page as a frontend development guide.

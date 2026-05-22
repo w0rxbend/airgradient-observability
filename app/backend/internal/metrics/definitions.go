@@ -30,7 +30,7 @@ func Definitions() []Definition {
 		{Key: PM25, Label: "PM2.5", Unit: "ug/m3", Query: envMetric("METRIC_PM25", "airgradient_pm2d5_ugm3"), Min: 0, Max: 75, GoodBelow: ptr(12), WarnBelow: ptr(35)},
 		{Key: VOC, Label: "TVOC", Unit: "index", Query: envMetric("METRIC_VOC", "airgradient_tvoc_index"), Min: 0, Max: 500, GoodBelow: ptr(100), WarnBelow: ptr(300)},
 		{Key: NOx, Label: "NOx", Unit: "index", Query: envMetric("METRIC_NOX", "airgradient_nox_index"), Min: 0, Max: 500, GoodBelow: ptr(100), WarnBelow: ptr(300)},
-		{Key: Temperature, Label: "Temperature", Unit: "C", Query: envMetric("METRIC_TEMPERATURE", "airgradient_temperature_degc"), Min: 10, Max: 35},
+		{Key: Temperature, Label: "Temperature", Unit: "C", Query: envMetric("METRIC_TEMPERATURE", "airgradient_temperature_celsius"), Min: 10, Max: 35},
 		{Key: Humidity, Label: "Humidity", Unit: "%", Query: envMetric("METRIC_HUMIDITY", "airgradient_humidity_percent"), Min: 0, Max: 100, GoodBelow: ptr(60), WarnBelow: ptr(70)},
 	}
 }

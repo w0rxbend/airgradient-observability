@@ -1,59 +1,71 @@
 # Plan Alignment
 
-This checks the original project idea against the current implementation.
+This page tracks the implementation against the intended production topology.
 
 ## Target Topology
 
-Original:
-
 ```text
 AirGradient ONE
-  http://airgradient_xxx.local/metrics
-        ↓ scrape
-vmagent on LAN
-        ↓ remote_write over HTTPS
-VictoriaMetrics on OCI
-        ↓ query
-Custom app + Grafana
+  /metrics on LAN
+        |
+        v
+vmagent
+        |
+        v
+Nginx on OCI
+        |
+        v
+VictoriaMetrics
+        |
+        +-- Grafana
+        +-- Go backend API
 ```
 
-Current:
-
-```text
-AirGradient ONE
-  http://airgradient_xxx.local/metrics
-        ↓ scrape
-vmagent on LAN
-        ↓ remote_write over HTTPS + Basic Auth
-Docker Nginx on OCI
-        ↓
-VictoriaMetrics on OCI Docker network
-        ↓ query
-Go backend proxy/cache + Grafana
-        ↓
-SolidStart frontend
-```
-
-The current implementation matches the idea, with two deliberate refinements:
-
-- Nginx is containerized because the OCI host is Docker-only.
-- The custom app is split into a Go backend proxy and a SolidStart frontend.
+The repository also contains a frontend service, but frontend implementation is outside the scope of this status page.
 
 ## Milestones
 
-| Milestone | Status | Notes |
+| Milestone | Status | Evidence |
 |---|---|---|
-| M1: vmagent scrapes AirGradient locally | Implemented | `infra/edge/prometheus.yml`; `.local` may require host networking/static IP on some LANs |
-| M2: vmagent remote-writes to OCI VictoriaMetrics | Implemented | `infra/edge/docker-compose.vmagent.yml` writes to `/api/v1/write` through Docker Nginx |
-| M3: Grafana reads VictoriaMetrics | Implemented | datasource and dashboard provisioning are mounted in the OCI compose stack |
-| M4: backend exposes normalized API | Implemented | Go/Gin backend exposes current and range endpoints with cache |
-| M5: frontend renders AirGradient display metrics | Implemented | SolidStart dashboard renders CO2, PM2.5, TVOC, NOx, temperature, humidity |
-| M6: alerts for thresholds | Planned | thresholds exist in UI/Grafana; alerting rules are not implemented yet |
+| M1: scrape AirGradient locally | implemented | `infra/edge/prometheus.yml` |
+| M2: remote-write to OCI | implemented | `infra/edge/docker-compose.vmagent.yml` writes to `/api/v1/write` |
+| M3: store metrics in VictoriaMetrics | implemented | `infra/oci/docker-compose.vm.yml` service `victoriametrics` |
+| M4: route public traffic through Nginx | implemented | `infra/oci/nginx.conf` |
+| M5: provision Grafana datasource/dashboard | implemented | `infra/oci/grafana/*.yml`, `dashboards/airgradient-one.json` |
+| M6: expose normalized backend API | implemented | `app/backend/cmd/server/main.go` |
+| M7: local mock backend | implemented | `app/mock-server` |
+| M8: alerting | planned | no alert rules/provisioning yet |
+| M9: production backup policy | planned | docs recommend policy; no automation yet |
+| M10: pinned third-party images | planned | several services still use `latest` |
 
-## Known Follow-Up Work
+## Known Implementation Constraints
 
-- Confirm real AirGradient metric names from a live device.
-- Add alert rules/provisioning for CO2, PM2.5, and stale samples.
-- Add stale-cache fallback and `X-Cache` headers in the backend.
-- Pin Docker image versions before production.
-- Decide whether `/victoriametrics/` should remain publicly reachable behind Basic Auth or stay internal only.
+- Backend expects one time series per metric after label filtering.
+- Backend cache is process-local and not shared across replicas.
+- Backend has no stale-cache fallback.
+- Backend exposes six normalized metrics, not every scraped AirGradient metric.
+- Grafana dashboard must be manually kept in sync with metric-name changes.
+- `/victoriametrics/` is publicly routed behind Basic Auth unless removed.
+- Backend unit test coverage has not been added yet.
+
+## Recently Confirmed Metric Mapping
+
+The checked scrape sample in `app/backend/metrics` includes all six backend defaults:
+
+| API key | Metric |
+|---|---|
+| `co2` | `airgradient_co2_ppm` |
+| `pm25` | `airgradient_pm2d5_ugm3` |
+| `voc` | `airgradient_tvoc_index` |
+| `nox` | `airgradient_nox_index` |
+| `temperature` | `airgradient_temperature_celsius` |
+| `humidity` | `airgradient_humidity_percent` |
+
+## Recommended Next Work
+
+1. Add backend tests for cache, label filters, validation, and VictoriaMetrics parsing.
+2. Pin VictoriaMetrics, vmagent, and Grafana image versions.
+3. Add alert rules for stale samples, high CO2, and high PM2.5.
+4. Remove or restrict `/victoriametrics/` in production.
+5. Define and test backup/restore for `vmdata`.
+6. Decide how multi-device support should appear in the API before adding more sensors.

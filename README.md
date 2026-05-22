@@ -1,129 +1,127 @@
 # AirGradient Observability
 
-Self-hosted AirGradient ONE observability stack:
+Self-hosted observability stack for an AirGradient ONE sensor. The system scrapes the device's Prometheus endpoint on the LAN, stores samples in VictoriaMetrics on an OCI VM, and exposes the data through Grafana and a small Go API.
 
 ```text
 AirGradient ONE
-  http://airgradient_xxx.local/metrics
-        ↓ scrape
-vmagent on LAN
-        ↓ remote_write over HTTPS
-VictoriaMetrics on OCI
-        ↓ query
-Go backend proxy + Grafana
-        ↓ cached API
-SolidStart app
+  /metrics on the local network
+        |
+        | scrape
+        v
+vmagent on the LAN edge host
+        |
+        | remote_write over HTTPS + Basic Auth
+        v
+Nginx on OCI
+        |
+        v
+VictoriaMetrics
+        |
+        +-- Grafana dashboards
+        +-- Go backend API
 ```
 
-## Repository
+This repository also contains a SolidStart frontend, but frontend implementation is intentionally out of scope for the production documentation below. The operational source of truth for metrics collection, storage, Grafana, and the backend API is under `infra/`, `app/backend/`, `app/mock-server/`, `dashboards/`, and `docs/`.
+
+## Repository Layout
 
 ```text
 infra/
-  edge/
-    docker-compose.vmagent.yml
-    prometheus.yml
-  oci/
-    docker-compose.vm.yml
-    nginx.conf
-    grafana/
-      datasource.yml
-      dashboard.yml
+  edge/                  # vmagent collector that runs near the sensor
+  oci/                   # OCI Docker Compose stack and Nginx config
 app/
-  backend/   # Go + Gin proxy/cache
-  frontend/
+  backend/               # Go + Gin API proxy for VictoriaMetrics
+  mock-server/           # local fake backend API for development/demo use
 dashboards/
-  airgradient-one.json
+  airgradient-one.json   # Grafana dashboard provisioned into Grafana
 docs/
-  index.md
-  architecture.md
-  api.md
-  backend.md
-  configuration.md
-  deployment.md
-  development.md
-  frontend.md
-  grafana.md
-  metrics.md
-  operations.md
-  security.md
-  troubleshooting.md
+  index.md               # documentation map
+  architecture.md        # system design and data flow
+  configuration.md       # environment variables and config files
+  deployment.md          # production deployment guide
+  operations.md          # day-2 runbooks
+  security.md            # threat model and hardening notes
+  backend.md             # backend internals
+  api.md                 # API contract
+  metrics.md             # metric catalog and mappings
+  grafana.md             # Grafana provisioning and dashboard notes
+  development.md         # non-frontend development workflow
+  troubleshooting.md     # diagnosis guide
 ```
-
-## Documentation
-
-Start with [docs/index.md](docs/index.md).
-
-Key guides:
-
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api.md)
-- [Configuration](docs/configuration.md)
-- [Deployment](docs/deployment.md)
-- [Development](docs/development.md)
-- [Backend API](docs/backend.md)
-- [Frontend App](docs/frontend.md)
-- [Grafana](docs/grafana.md)
-- [Metrics Catalog](docs/metrics.md)
-- [Operations](docs/operations.md)
-- [Security](docs/security.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Plan Alignment](docs/status.md)
-
-## Milestones
-
-- M1: `vmagent` scrapes AirGradient locally.
-- M2: `vmagent` remote-writes to OCI VictoriaMetrics.
-- M3: Grafana reads VictoriaMetrics.
-- M4: Go backend proxy exposes normalized cached APIs.
-- M5: Frontend renders CO2, PM2.5, VOC, NOx, temperature, and humidity.
-- M6: Alerts for CO2 and PM2.5 thresholds. Planned.
 
 ## Quick Start
 
-### OCI
+Start with the documentation entry point:
 
-```bash
-cd infra/oci
-docker compose -f docker-compose.vm.yml up -d
-```
+- [Documentation Index](docs/index.md)
+- [Architecture](docs/architecture.md)
+- [Configuration](docs/configuration.md)
+- [Deployment](docs/deployment.md)
+- [Operations](docs/operations.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
-Use Nginx in front with TLS and Basic Auth. Do not expose raw `8428` publicly.
+## Production Shape
 
-Grafana automatically loads dashboards from `dashboards/` through `infra/oci/grafana/dashboard.yml`.
+The recommended deployment uses two hosts:
 
-Nginx runs as part of the OCI Docker Compose stack. The host only needs Docker and Compose.
+- LAN edge host: runs only `vmagent`, can reach the AirGradient device, and buffers remote-write samples locally.
+- OCI host: runs Nginx, VictoriaMetrics, Grafana, the Go backend, and supporting Docker volumes.
 
-### LAN Edge
+Only Nginx publishes host ports `80` and `443`. VictoriaMetrics port `8428`, Grafana port `3000`, and backend port `8080` stay private inside the Docker network.
 
-Edit `infra/edge/prometheus.yml` and replace `airgradient_xxx.local:80`.
+## Local Backend Development
 
-```bash
-cd infra/edge
-DOMAIN=... VM_USER=... VM_PASSWORD=... docker compose -f docker-compose.vmagent.yml up -d
-```
-
-### App
-
-Backend:
+Run the real backend against local or remote VictoriaMetrics:
 
 ```bash
 cd app/backend
 VM_URL=http://localhost:8428 go run ./cmd/server
 ```
 
-Frontend:
+Run checks:
 
 ```bash
-cd app/frontend
-npm install
-BACKEND_URL=http://localhost:8080 npm run dev
+cd app/backend
+go test ./...
 ```
 
-API routes:
+Run the mock backend when VictoriaMetrics is not available:
 
-```http
-GET /api/metrics/current
-GET /api/metrics/range?metric=co2&range=24h&step=60s
+```bash
+cd app/mock-server
+go run .
 ```
 
-The frontend queries the Go backend only. The backend queries VictoriaMetrics and caches responses. Adjust metric names in `app/backend/internal/metrics/definitions.go` or with `METRIC_*` environment variables once real samples are visible.
+## Metric Defaults
+
+The backend currently exposes these normalized keys:
+
+| API key | VictoriaMetrics metric |
+|---|---|
+| `co2` | `airgradient_co2_ppm` |
+| `pm25` | `airgradient_pm2d5_ugm3` |
+| `voc` | `airgradient_tvoc_index` |
+| `nox` | `airgradient_nox_index` |
+| `temperature` | `airgradient_temperature_celsius` |
+| `humidity` | `airgradient_humidity_percent` |
+
+If your AirGradient firmware emits different names, override them with `METRIC_*` environment variables on the backend and update Grafana dashboard queries to match.
+
+## Current State
+
+Implemented:
+
+- LAN scraping with `vmagent`
+- remote write to VictoriaMetrics through Nginx
+- VictoriaMetrics storage with 12-month retention
+- Grafana datasource and dashboard provisioning
+- Go backend API with metric normalization, timeouts, TTL cache, and request coalescing
+- local mock backend API
+
+Planned or recommended before serious production use:
+
+- pin VictoriaMetrics, vmagent, and Grafana image versions
+- add VictoriaMetrics backup or OCI volume snapshot policy
+- add alerting rules for stale samples, high CO2, and high PM2.5
+- add backend unit tests around cache and VictoriaMetrics response handling
+- decide whether direct `/victoriametrics/` access should remain public behind auth or be removed

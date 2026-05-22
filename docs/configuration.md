@@ -1,103 +1,174 @@
 # Configuration
 
-Configuration is intentionally split by runtime context. Avoid using one global `.env` file for every service unless the variable names and secrets are intentionally shared.
+Keep configuration separated by runtime boundary. The same variable name can appear in different contexts, but the trust boundary is not always the same.
 
-## Edge vmagent
+## Configuration Files
 
-Used from `infra/edge/docker-compose.vmagent.yml`.
+| File | Runtime | Purpose |
+|---|---|---|
+| `.env.example` | reference only | discover all common variables in one place |
+| `infra/edge/prometheus.yml` | LAN edge | scrape target, scrape interval, static labels |
+| `infra/edge/docker-compose.vmagent.yml` | LAN edge | `vmagent` image, remote write, local buffer volume |
+| `infra/oci/docker-compose.vm.yml` | OCI | Nginx, VictoriaMetrics, Grafana, backend, frontend service |
+| `infra/oci/nginx.conf` | OCI | TLS, Basic Auth, route mapping |
+| `infra/oci/grafana/*.yml` | OCI | Grafana datasource and dashboard provisioning |
+| `app/backend/internal/metrics/definitions.go` | backend | normalized metric catalog and default thresholds |
 
-```env
-VM_USER=airgradient
-VM_PASSWORD=change-me
+## Edge Collector
+
+Edit `infra/edge/prometheus.yml` before running `vmagent`:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: airgradient_one
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - airgradient_xxx.local:80
+        labels:
+          location: home
+          device: airgradient_one
 ```
 
-Important files:
+Set the real target hostname or IP. If `.local` mDNS does not work from the edge host, use a static DHCP lease or direct IP address.
 
-- `infra/edge/prometheus.yml`
-- `infra/edge/docker-compose.vmagent.yml`
-
-Change these before running:
-
-- `airgradient_xxx.local:80`
-- `https://YOUR_DOMAIN/api/v1/write`
-  The compose file now uses `DOMAIN`, so set `DOMAIN=YOUR_DOMAIN` when starting vmagent.
-
-## OCI Compose
-
-Used from `infra/oci/docker-compose.vm.yml`.
-
-The compose stack starts:
-
-- `victoriametrics`
-- `grafana`
-- `backend`
-- `frontend`
-- `nginx`
-
-Only Nginx publishes host ports:
-
-- Nginx: `80`, `443`
-- VictoriaMetrics: `8428` inside the Docker network
-- Grafana: `3000` inside the Docker network
-- Go backend: `8080` inside the Docker network
-- Solid frontend: `3000` inside the Docker network
-
-## Go Backend
-
-Used by `app/backend`.
+The static labels are important because the backend defaults to:
 
 ```env
-ADDR=:8080
-VM_URL=http://localhost:8428
-VM_USER=
-VM_PASSWORD=
 AIRGRADIENT_LABEL_FILTER={device="airgradient_one"}
-CACHE_TTL=10s
-RANGE_CACHE_TTL=30s
-VM_QUERY_TIMEOUT=10s
-ALLOWED_ORIGIN=http://localhost:3000
 ```
 
-Metric names can be overridden without recompiling:
+Run-time variables for `infra/edge/docker-compose.vmagent.yml`:
 
-```env
-METRIC_CO2=airgradient_co2_ppm
-METRIC_PM25=airgradient_pm2d5_ugm3
-METRIC_VOC=airgradient_tvoc_index
-METRIC_NOX=airgradient_nox_index
-METRIC_TEMPERATURE=airgradient_temperature_degc
-METRIC_HUMIDITY=airgradient_humidity_percent
+| Variable | Required | Example | Meaning |
+|---|---:|---|---|
+| `DOMAIN` | yes | `metrics.example.com` | OCI Nginx domain |
+| `VM_USER` | yes | `airgradient-writer` | Basic Auth username for remote write |
+| `VM_PASSWORD` | yes | `...` | Basic Auth password for remote write |
+
+`vmagent` remote-writes to:
+
+```text
+https://${DOMAIN}/api/v1/write
 ```
 
-`METRIC_*` values are intended to be simple metric names. If you set a full PromQL expression, the backend will not append `AIRGRADIENT_LABEL_FILTER` to it.
+## OCI Stack
 
-The root `.env.example` shows all variables in one place for discovery. In practice, keep edge, backend, and frontend env files separate so similarly named secrets do not get mixed accidentally.
+Run-time variables for `infra/oci/docker-compose.vm.yml`:
 
-## Solid Frontend
+| Variable | Required | Example | Meaning |
+|---|---:|---|---|
+| `DOMAIN` | yes | `metrics.example.com` | public DNS name served by Nginx and Grafana root URL |
 
-Used by `app/frontend` on the SolidStart server side.
-
-```env
-BACKEND_URL=http://localhost:8080
-```
-
-Browser code calls same-origin `/api/...`; it does not receive `BACKEND_URL`.
-
-## Reverse Proxy
-
-`infra/oci/nginx.conf` separates ingestion traffic from app traffic:
-
-- `/api/v1/write` -> VictoriaMetrics remote write
-- `/api/` -> Go backend
-- `/grafana/` -> Grafana
-- `/victoriametrics/` -> VictoriaMetrics query/debug path
-
-Keep Basic Auth and TLS in front of public endpoints.
-
-The Nginx container expects these files under `infra/oci`:
+Required local files under `infra/oci`:
 
 ```text
 certs/fullchain.pem
 certs/privkey.pem
 .htpasswd
 ```
+
+The Compose stack includes a frontend service because Nginx routes `/` to it. Frontend implementation is not covered in this documentation.
+
+## Nginx
+
+`infra/oci/nginx.conf` uses `${DOMAIN}` through `envsubst` at container startup.
+
+Route map:
+
+| Path | Upstream |
+|---|---|
+| `/api/v1/write` | `http://victoriametrics:8428` |
+| `/api/` | `http://backend:8080` |
+| `/victoriametrics/` | `http://victoriametrics:8428/` |
+| `/grafana/` | `http://grafana:3000/` |
+| `/` | `http://frontend:3000` |
+
+All routes inherit:
+
+```nginx
+auth_basic "AirGradient Observability";
+auth_basic_user_file /etc/nginx/.htpasswd;
+```
+
+## Backend
+
+Backend variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `ADDR` | `:8080` | backend listen address |
+| `VM_URL` | `http://localhost:8428` | VictoriaMetrics base URL |
+| `VM_USER` | empty | optional Basic Auth username for VictoriaMetrics queries |
+| `VM_PASSWORD` | empty | optional Basic Auth password for VictoriaMetrics queries |
+| `VM_QUERY_TIMEOUT` | `10s` | per-query timeout |
+| `AIRGRADIENT_LABEL_FILTER` | `{device="airgradient_one"}` | selector appended to bare metric names |
+| `CACHE_TTL` | `10s` | current metrics cache TTL |
+| `RANGE_CACHE_TTL` | `30s` | range metrics cache TTL |
+| `ALLOWED_ORIGIN` | `http://localhost:3000` | CORS origin for direct browser calls |
+
+Production Compose sets:
+
+```env
+ADDR=:8080
+VM_URL=http://victoriametrics:8428
+AIRGRADIENT_LABEL_FILTER={device="airgradient_one"}
+CACHE_TTL=10s
+RANGE_CACHE_TTL=30s
+VM_QUERY_TIMEOUT=10s
+ALLOWED_ORIGIN=https://${DOMAIN}
+```
+
+`VM_USER` and `VM_PASSWORD` are only needed when `VM_URL` points through a Basic Auth protected reverse proxy. They are not needed for the default internal Docker-network URL.
+
+## Metric Overrides
+
+Default backend mappings:
+
+```env
+METRIC_CO2=airgradient_co2_ppm
+METRIC_PM25=airgradient_pm2d5_ugm3
+METRIC_VOC=airgradient_tvoc_index
+METRIC_NOX=airgradient_nox_index
+METRIC_TEMPERATURE=airgradient_temperature_celsius
+METRIC_HUMIDITY=airgradient_humidity_percent
+```
+
+Use overrides when firmware emits different metric names. Prefer bare metric names so the backend can append `AIRGRADIENT_LABEL_FILTER`.
+
+Good:
+
+```env
+METRIC_CO2=airgradient_co2_ppm
+```
+
+Advanced:
+
+```env
+METRIC_CO2=airgradient_co2_ppm{device="office_sensor"}
+```
+
+When an override includes `{...}`, the backend does not append `AIRGRADIENT_LABEL_FILTER`.
+
+## Credential Boundaries
+
+For small deployments, the same `.htpasswd` credential can protect all public routes. For production, prefer separate credentials or routing policy for:
+
+- `vmagent` remote-write writer
+- human Grafana/API readers
+- direct VictoriaMetrics debug access if kept enabled
+
+The current Nginx config has one Basic Auth file for all public paths.
+
+## Image Versions
+
+Current Compose files use:
+
+- `victoriametrics/victoria-metrics:latest`
+- `victoriametrics/vmagent:latest`
+- `grafana/grafana:latest`
+
+Pin these before production change control matters. Record chosen versions in your operations notes and upgrade deliberately.

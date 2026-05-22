@@ -1,0 +1,428 @@
+/* ================================================================
+   AirGradient Gauge Kiosk — scoped styles (all classes gi-*)
+   Aesthetic: Premium dark instrumentation panel
+   All CSS custom properties scoped to .gi-stage so they never
+   leak into the main dashboard.
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+/* ─── Variables ──────────────────────────────────────────────── */
+.gi-stage {
+  /* Backgrounds */
+  --gi-bg:      #0E1116;
+  --gi-card-bg: #141821;
+
+  /* Status colours */
+  --gi-g-low:   #2BD46B;
+  --gi-g-mid:   #F2D027;
+  --gi-g-high:  #FF8A2C;
+  --gi-g-top:   #FF3D3D;
+
+  /* Gradient arc stops */
+  --gi-arc-1:   #2BD46B;
+  --gi-arc-2:   #E0D43A;
+  --gi-arc-3:   #F2A227;
+  --gi-arc-4:   #FF3D3D;
+
+  /* Text colours */
+  --gi-text-0:  #F0F2F6;
+  --gi-text-1:  #B4B8C8;
+  --gi-text-2:  #6E7480;
+
+  /* Borders / lines */
+  --gi-line:    rgba(255, 255, 255, 0.07);
+  --gi-line-2:  rgba(255, 255, 255, 0.12);
+
+  /* Radius */
+  --gi-radius:  clamp(10px, 1.4vmin, 20px);
+
+  /* Fluid spacing */
+  --gi-gap:     clamp(10px, 1.4vmin, 18px);
+
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Stage & Canvas ─────────────────────────────────────────── */
+.gi-stage {
+  position: fixed;
+  inset: 0;
+  background: var(--gi-bg);
+  overflow: hidden;
+}
+
+.gi-canvas {
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ─── Topbar ─────────────────────────────────────────────────── */
+.gi-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(6px, 0.8vmin, 12px) clamp(12px, 1.6vmin, 24px);
+  border-bottom: 1px solid var(--gi-line);
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.gi-brand {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1vmin, 14px);
+}
+
+.gi-brand-mark {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(11px, 1.5vmin, 18px);
+  letter-spacing: 0.1em;
+  color: var(--gi-g-low);
+  background: color-mix(in oklab, var(--gi-g-low) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--gi-g-low) 30%, transparent);
+  border-radius: 5px;
+  padding: 3px 7px;
+}
+
+.gi-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gi-brand-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(8px, 1vmin, 13px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gi-text-0);
+}
+
+.gi-brand-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: clamp(6px, 0.75vmin, 10px);
+  letter-spacing: 0.06em;
+  color: var(--gi-text-2);
+}
+
+.gi-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vmin, 18px);
+}
+
+.gi-netpill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(7px, 0.85vmin, 11px);
+  letter-spacing: 0.1em;
+  color: var(--gi-g-low);
+  background: color-mix(in oklab, var(--gi-g-low) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--gi-g-low) 30%, transparent);
+  border-radius: 100px;
+  padding: 3px 9px;
+}
+
+.gi-netpill--offline {
+  color: var(--gi-g-top);
+  background: color-mix(in oklab, var(--gi-g-top) 12%, transparent);
+  border-color: color-mix(in oklab, var(--gi-g-top) 30%, transparent);
+}
+
+.gi-netdot {
+  width: clamp(5px, 0.65vmin, 8px);
+  height: clamp(5px, 0.65vmin, 8px);
+  border-radius: 50%;
+  background: var(--gi-g-low);
+  animation: gi-pulse 2.2s ease-in-out infinite;
+}
+
+.gi-uplink {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: clamp(7px, 0.82vmin, 10px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gi-text-2);
+}
+
+.gi-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--gi-text-1);
+}
+
+.gi-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.gi-clock-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: clamp(6px, 0.75vmin, 9px);
+  letter-spacing: 0.08em;
+  color: var(--gi-text-2);
+}
+
+.gi-clock-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(9px, 1.1vmin, 14px);
+  letter-spacing: 0.06em;
+  color: var(--gi-text-0);
+}
+
+/* ─── Error state ────────────────────────────────────────────── */
+.gi-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--gi-text-2);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(10px, 1.2vmin, 15px);
+}
+
+.gi-error-icon {
+  font-size: clamp(28px, 4vmin, 52px);
+  color: var(--gi-g-top);
+}
+
+.gi-error code {
+  font-size: 0.75em;
+  color: var(--gi-text-2);
+  background: rgba(255, 61, 61, 0.08);
+  border: 1px solid rgba(255, 61, 61, 0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+/* ─── Grid ───────────────────────────────────────────────────── */
+.gi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--gi-gap);
+  flex: 1;
+  min-height: 0;
+  padding: var(--gi-gap);
+  box-sizing: border-box;
+}
+
+/* ─── Card ───────────────────────────────────────────────────── */
+.gi-card {
+  background: var(--gi-card-bg);
+  border-radius: var(--gi-radius);
+  border: 1px solid var(--gi-line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: gi-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Staggered entrance per card */
+.gi-card:nth-child(1) { animation-delay: 0.00s; }
+.gi-card:nth-child(2) { animation-delay: 0.04s; }
+.gi-card:nth-child(3) { animation-delay: 0.08s; }
+.gi-card:nth-child(4) { animation-delay: 0.12s; }
+.gi-card:nth-child(5) { animation-delay: 0.16s; }
+.gi-card:nth-child(6) { animation-delay: 0.20s; }
+.gi-card:nth-child(7) { animation-delay: 0.24s; }
+.gi-card:nth-child(8) { animation-delay: 0.28s; }
+
+@keyframes gi-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Top shimmer line */
+.gi-card-top {
+  height: 2px;
+  width: 100%;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gi-shimmer-color, rgba(43, 212, 107, 0.7)) 40%,
+    var(--gi-shimmer-color, rgba(43, 212, 107, 0.7)) 60%,
+    transparent 100%
+  );
+}
+
+/* ─── Card Header ────────────────────────────────────────────── */
+.gi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(6px, 0.9vmin, 12px) clamp(8px, 1.2vmin, 16px);
+  flex-shrink: 0;
+}
+
+.gi-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(9px, 1.1vmin, 14px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gi-text-1);
+}
+
+.gi-sublabel {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: clamp(7px, 0.85vmin, 11px);
+  letter-spacing: 0.06em;
+  color: var(--gi-text-2);
+  margin-top: 1px;
+}
+
+/* Status pill */
+.gi-status {
+  display: flex;
+  align-items: center;
+  gap: clamp(3px, 0.4vmin, 6px);
+  padding: clamp(2px, 0.3vmin, 4px) clamp(5px, 0.7vmin, 9px);
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(7px, 0.82vmin, 11px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* LED dot */
+.gi-led {
+  width: clamp(5px, 0.65vmin, 8px);
+  height: clamp(5px, 0.65vmin, 8px);
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: gi-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes gi-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* ─── Gauge wrap + inner ─────────────────────────────────────── */
+.gi-gauge-wrap {
+  flex: 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  /* Padding keeps the SVG away from card edges so the blur filter
+     doesn't get clipped by the card's overflow:hidden */
+  padding: 4px 14px 0;
+}
+
+.gi-gauge-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 8%;
+  gap: clamp(1px, 0.3vmin, 4px);
+}
+
+/* Icon */
+.gi-icon {
+  width: clamp(28px, 4vmin, 52px);
+  height: clamp(28px, 4vmin, 52px);
+  flex-shrink: 0;
+}
+
+/* Big value */
+.gi-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: clamp(22px, 3.8vmin, 52px);
+  line-height: 1;
+  color: var(--gi-text-0);
+  white-space: nowrap;
+}
+
+.gi-unit {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: 0.28em;
+  color: var(--gi-text-2);
+  letter-spacing: 0.05em;
+}
+
+/* Sparkline inside gauge */
+.gi-spark {
+  width: 52%;
+  max-width: 100px;
+  flex-shrink: 0;
+}
+
+/* ─── Footer stats ───────────────────────────────────────────── */
+.gi-foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-top: 1px dashed var(--gi-line);
+  flex-shrink: 0;
+}
+
+.gi-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(4px, 0.6vmin, 8px) clamp(6px, 0.9vmin, 12px);
+  gap: clamp(1px, 0.2vmin, 3px);
+}
+
+.gi-stat-c {
+  align-items: center;
+  border-left: 1px solid var(--gi-line);
+  border-right: 1px solid var(--gi-line);
+}
+
+.gi-stat-r {
+  align-items: flex-end;
+}
+
+.gi-stat-l {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: clamp(6px, 0.72vmin, 9px);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gi-text-2);
+  white-space: nowrap;
+}
+
+.gi-stat-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: clamp(8px, 1vmin, 13px);
+  color: var(--gi-text-1);
+  white-space: nowrap;
+}

@@ -37,64 +37,66 @@ export default function KioskMainPage() {
 
   return (
     <main class="mk-shell" aria-label="AirGradient kiosk overview">
-      <header class="mk-topbar">
-        <div class="mk-brand">
-          <span class="mk-brand-mark" aria-hidden="true">
-            <MaterialIcon name="dashboard" />
-          </span>
-          <div>
-            <p class="mk-label">AirGradient ONE</p>
-            <h1>Indoor Air Dashboard</h1>
+      <div class="mk-frame">
+        <header class="mk-topbar">
+          <div class="mk-brand">
+            <span class="mk-brand-mark" aria-hidden="true">
+              <MaterialIcon name="dashboard" />
+            </span>
+            <div>
+              <p class="mk-label">AirGradient ONE</p>
+              <h1>Indoor Air Dashboard</h1>
+            </div>
           </div>
-        </div>
 
-        <div class={`mk-sync ${data.hasStaleCurrent() ? "is-stale" : ""}`}>
-          <span class="mk-sync-dot" />
-          <div>
-            <span>{data.hasStaleCurrent() ? "Last good sample" : "Live sample"}</span>
-            <strong>{lastSeen()}</strong>
+          <div class={`mk-sync ${data.hasStaleCurrent() ? "is-stale" : ""}`}>
+            <span class="mk-sync-dot" />
+            <div>
+              <span>{data.hasStaleCurrent() ? "Last good sample" : "Live sample"}</span>
+              <strong>{lastSeen()}</strong>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <Switch>
-        <Match when={current.loading && !displayed()}>
-          <LoadingBoard />
-        </Match>
-        <Match when={current.error && !displayed()}>
-          <BackendError />
-        </Match>
-        <Match when={displayed()}>
-          <section class="mk-layout">
-            <ScorePanel score={score()} status={status()} />
+        <Switch>
+          <Match when={current.loading && !displayed()}>
+            <LoadingBoard />
+          </Match>
+          <Match when={current.error && !displayed()}>
+            <BackendError />
+          </Match>
+          <Match when={displayed()}>
+            <section class="mk-layout">
+              <ScorePanel score={score()} status={status()} />
 
-            <section class="mk-column mk-comfort" aria-label="Comfort readings">
-              <SectionHeader icon="home" label="Comfort" title="Room conditions" />
-              <div class="mk-split">
-                <Show when={temperature()}>{(metric) => <LargeMetric metric={metric()} />}</Show>
-                <Show when={humidity()}>{(metric) => <LargeMetric metric={metric()} />}</Show>
-              </div>
+              <section class="mk-column mk-comfort" aria-label="Comfort readings">
+                <SectionHeader icon="home" label="Comfort" title="Room conditions" />
+                <div class="mk-split">
+                  <Show when={temperature()}>{(metric) => <LargeMetric metric={metric()} />}</Show>
+                  <Show when={humidity()}>{(metric) => <LargeMetric metric={metric()} />}</Show>
+                </div>
+              </section>
+
+              <section class="mk-column mk-pollutants" aria-label="Pollutant readings">
+                <SectionHeader icon="science" label="Pollutants" title="Air composition" />
+                <div class="mk-pollutant-grid">
+                  <Show when={co2()}>{(metric) => <MetricCard metric={metric()} prominent />}</Show>
+                  <Show when={pm25()}>{(metric) => <MetricCard metric={metric()} />}</Show>
+                  <Show when={voc()}>{(metric) => <MetricCard metric={metric()} />}</Show>
+                  <Show when={nox()}>{(metric) => <MetricCard metric={metric()} />}</Show>
+                </div>
+              </section>
+
+              <section class="mk-column mk-all" aria-label="All current readings">
+                <SectionHeader icon="sensors" label="Sensors" title="Current metrics" />
+                <div class="mk-list">
+                  <For each={metrics()}>{(metric) => <MetricRow metric={metric} />}</For>
+                </div>
+              </section>
             </section>
-
-            <section class="mk-column mk-pollutants" aria-label="Pollutant readings">
-              <SectionHeader icon="science" label="Pollutants" title="Air composition" />
-              <div class="mk-pollutant-grid">
-                <Show when={co2()}>{(metric) => <MetricCard metric={metric()} prominent />}</Show>
-                <Show when={pm25()}>{(metric) => <MetricCard metric={metric()} />}</Show>
-                <Show when={voc()}>{(metric) => <MetricCard metric={metric()} />}</Show>
-                <Show when={nox()}>{(metric) => <MetricCard metric={metric()} />}</Show>
-              </div>
-            </section>
-
-            <section class="mk-column mk-all" aria-label="All current readings">
-              <SectionHeader icon="sensors" label="Sensors" title="Current metrics" />
-              <div class="mk-list">
-                <For each={metrics()}>{(metric) => <MetricRow metric={metric} />}</For>
-              </div>
-            </section>
-          </section>
-        </Match>
-      </Switch>
+          </Match>
+        </Switch>
+      </div>
     </main>
   );
 }
@@ -172,7 +174,7 @@ function MetricCard(props: { metric: CurrentMetric; prominent?: boolean }) {
 
 function MetricRow(props: { metric: CurrentMetric }) {
   return (
-    <article class="mk-row" style={metricToneStyle(props.metric)}>
+    <article class={`mk-row ${props.metric.status}`} style={metricToneStyle(props.metric)}>
       <div class="mk-row-leading">
         <span class="mk-row-icon">
           <MetricIcon metric={props.metric} />

@@ -11,12 +11,12 @@ import type { Status } from "../../shared/domain/airQuality";
 const kioskMetricOrder: MetricKey[] = ["co2", "pm25", "voc", "nox", "temperature", "humidity"];
 
 const metricTone: Record<MetricKey, string> = {
-  co2: "#3f6fd9",
-  pm25: "#b26a00",
-  voc: "#7750a6",
-  nox: "#9c4328",
-  temperature: "#ba1a1a",
-  humidity: "#006a6a",
+  co2: "#9db7df",
+  pm25: "#e6d98f",
+  voc: "#b9a1d8",
+  nox: "#d9a07c",
+  temperature: "#d98ca3",
+  humidity: "#8fc8bd",
 };
 
 export const metricIconName: Record<MetricKey, string> = {

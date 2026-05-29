@@ -1,4 +1,4 @@
-import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import type { JSX } from "solid-js";
 import type { DailyScore } from "../../../shared/api/backendClient";
 import { toDateStr } from "../../../shared/api/backendClient";
@@ -7,6 +7,7 @@ type Props = {
   scores: DailyScore[];
   selected: Date | null;
   onSelect: (date: Date | null) => void;
+  onVisibleDaysChange?: (days: number) => void;
 };
 
 type Cell = {
@@ -34,7 +35,11 @@ const DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CELL = 22;
 const GAP  = 4;
 const STEP = CELL + GAP;
-const DOW_COL_PX = 36;
+const DOW_COL_PX = 28;
+const LAYOUT_GAP = 8;
+const LAYOUT_PAD_INLINE = 16;
+const MIN_WEEKS = 1;
+const MAX_WEEKS = 52;
 
 export function AirQualityHeatmap(props: Props) {
   let scrollRef: HTMLDivElement | undefined;
@@ -45,18 +50,24 @@ export function AirQualityHeatmap(props: Props) {
 
   onMount(() => {
     if (!scrollRef) return;
-    setAvailableWidth(scrollRef.clientWidth);
-    const ro = new ResizeObserver((entries) => {
-      setAvailableWidth(entries[0].contentRect.width);
-    });
+
+    const updateWidth = () => setAvailableWidth(scrollRef?.clientWidth ?? 0);
+    updateWidth();
+
+    const ro = new ResizeObserver(updateWidth);
     ro.observe(scrollRef);
     onCleanup(() => ro.disconnect());
   });
 
   const weeksToShow = createMemo(() => {
-    const w = availableWidth();
-    if (w <= 0) return 14;
-    return Math.max(4, Math.floor((w - DOW_COL_PX) / STEP));
+    const gridAreaWidth = availableWidth() - DOW_COL_PX - LAYOUT_GAP - LAYOUT_PAD_INLINE;
+    if (gridAreaWidth <= 0) return MIN_WEEKS;
+
+    return Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.floor((gridAreaWidth + GAP) / STEP)));
+  });
+
+  createEffect(() => {
+    props.onVisibleDaysChange?.(weeksToShow() * 7);
   });
 
   const cells = createMemo<Cell[]>(() => {
@@ -290,13 +301,21 @@ export function AirQualityHeatmap(props: Props) {
 }
 
 function HeatmapLegend() {
+  const entries = [
+    { label: "No data", score: -1 },
+    { label: "Poor", score: 18 },
+    { label: "Moderate", score: 55 },
+    { label: "Good", score: 90 },
+  ];
+
   return (
-    <div class="heatmap-legend">
-      <span class="heatmap-legend-label">Less</span>
-      {([-1, 18, 42, 68, 90] as const).map((s) => (
-        <div class="heatmap-legend-dot" style={{ background: scoreToColor(s) }} />
+    <div class="heatmap-legend" aria-label="Air quality history legend">
+      {entries.map((entry) => (
+        <span class="heatmap-legend-item">
+          <span class="heatmap-legend-dot" style={{ background: scoreToColor(entry.score) }} />
+          <span class="heatmap-legend-label">{entry.label}</span>
+        </span>
       ))}
-      <span class="heatmap-legend-label">More</span>
     </div>
   );
 }

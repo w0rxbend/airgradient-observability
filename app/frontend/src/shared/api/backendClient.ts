@@ -85,9 +85,13 @@ export async function fetchAllRangesAbsolute(from: number, to: number): Promise<
   return Promise.all(metricKeys.map((metric) => fetchRangeAbsolute(metric, from, to)));
 }
 
-export async function fetchDailyScores(): Promise<DailyScore[]> {
+export async function fetchDailyScores(days: number): Promise<DailyScore[]> {
+  if (!Number.isFinite(days) || days < 1) return [];
+
+  const requestedDays = Math.min(365, Math.max(1, Math.floor(days)));
+  const range = `${requestedDays}d`;
   const responses = await Promise.all(
-    metricKeys.map((metric) => fetchRangeRaw(metric, "90d", "6h").catch(() => null))
+    metricKeys.map((metric) => fetchRangeRaw(metric, range, "6h").catch(() => null))
   );
 
   const valuesByDate = new Map<string, Map<MetricKey, number[]>>();

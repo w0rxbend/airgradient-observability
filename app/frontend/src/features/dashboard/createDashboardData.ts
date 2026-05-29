@@ -12,7 +12,11 @@ export const dashboardRefreshMs = 5_000;
 
 type DateWindow = { from: number; to: number } | null;
 
-export function createDashboardData(range: Accessor<RangeKey>, dateWindow: Accessor<DateWindow>) {
+export function createDashboardData(
+  range: Accessor<RangeKey>,
+  dateWindow: Accessor<DateWindow>,
+  dailyScoreDays: Accessor<number>
+) {
   const currentMetrics = createPollingResource(fetchCurrent, dashboardRefreshMs);
 
   const [allHistory] = createResource(
@@ -28,7 +32,7 @@ export function createDashboardData(range: Accessor<RangeKey>, dateWindow: Acces
         : fetchAllRanges(params.range)
   );
 
-  const [dailyScores] = createResource(fetchDailyScores);
+  const [dailyScores] = createResource(dailyScoreDays, fetchDailyScores);
 
   return {
     current: currentMetrics.resource,

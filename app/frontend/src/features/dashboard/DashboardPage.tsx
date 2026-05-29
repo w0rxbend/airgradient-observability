@@ -81,6 +81,7 @@ const metricDisplay: Array<{
 export default function DashboardPage() {
   const [range, setRange] = createSignal<RangeKey>("24h");
   const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
+  const [heatmapDays, setHeatmapDays] = createSignal(0);
   const isHistorical = createMemo(() => selectedDate() !== null);
 
   const dateWindow = createMemo(() => {
@@ -96,7 +97,7 @@ export default function DashboardPage() {
     return { from: from.getTime(), to: to.getTime() };
   });
 
-  const data = createDashboardData(range, dateWindow);
+  const data = createDashboardData(range, dateWindow, heatmapDays);
   const current = data.current;
   const displayedCurrent = data.displayedCurrent;
   const allHistory = data.allHistory;
@@ -262,6 +263,7 @@ export default function DashboardPage() {
               scores={dailyScores() ?? []}
               selected={selectedDate()}
               onSelect={(date) => setSelectedDate(date)}
+              onVisibleDaysChange={(days) => setHeatmapDays(days)}
             />
           </Suspense>
         </div>

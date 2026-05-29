@@ -1,5 +1,5 @@
 import { isMetricKey } from "../domain/metrics";
-import { isRangeKey } from "../domain/timeRanges";
+import { isApiRange } from "../domain/timeRanges";
 
 const durationPattern = /^\d+[smhd]$/;
 
@@ -12,7 +12,7 @@ export function validateRangeRequest(searchParams: URLSearchParams): ValidationR
   if (!metric.ok) return metric;
 
   const range = searchParams.get("range") ?? "24h";
-  if (!isRangeKey(range)) return invalid("range must be one of 1h, 6h, 24h, 7d, 30d");
+  if (!isApiRange(range)) return invalid("range must be an hour/day duration up to 365d");
 
   const step = stepParam(searchParams, "60s");
   if (!step.ok) return step;

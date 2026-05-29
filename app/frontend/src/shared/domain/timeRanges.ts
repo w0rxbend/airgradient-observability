@@ -12,6 +12,18 @@ export function isRangeKey(value: string): value is RangeKey {
   return timeRanges.some((range) => range.key === value);
 }
 
+export function isApiRange(value: string): boolean {
+  const match = /^(\d+)([hd])$/.exec(value);
+  if (!match) return false;
+
+  const amount = Number(match[1]);
+  const unit = match[2];
+  if (!Number.isSafeInteger(amount) || amount < 1) return false;
+
+  if (unit === "h") return amount <= 24 * 365;
+  return amount <= 365;
+}
+
 export function rangeToStep(range: RangeKey): string {
   switch (range) {
     case "1h":

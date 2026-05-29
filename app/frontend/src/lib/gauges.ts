@@ -1,4 +1,4 @@
-// Shared helpers for the GaugeI (kiosk-gauges) components.
+// Shared helpers for the kiosk-gauges components.
 
 export type GaugeStatus = { txt: string; color: string };
 

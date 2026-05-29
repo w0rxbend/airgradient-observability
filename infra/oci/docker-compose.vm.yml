@@ -1,49 +1,59 @@
 services:
-  nginx:
-    image: nginx:1.27-alpine
-    restart: unless-stopped
-    environment:
-      DOMAIN: ${DOMAIN:?set DOMAIN}
-    command: >
-      /bin/sh -c "envsubst '$$DOMAIN' < /etc/nginx/templates/nginx.conf.template
-      > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/templates/nginx.conf.template:ro
-      - ./certs:/etc/nginx/certs:ro
-      - ./.htpasswd:/etc/nginx/.htpasswd:ro
+  #  Metrics collector.
+  #  It scrapes targets defined in --promscrape.config
+  #  And forward them to --remoteWrite.url
+  vmagent:
+    image: docker.io/victoriametrics/vmagent:v1.144.0
     depends_on:
-      - victoriametrics
-      - grafana
-      - backend
-      - frontend
-
-  victoriametrics:
-    image: victoriametrics/victoria-metrics:latest
-    restart: unless-stopped
+      - "victoriametrics"
+    ports:
+      - 8429:8429
     volumes:
-      - vmdata:/victoria-metrics-data
+      - vmagentdata:/vmagentdata
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
-      - -storageDataPath=/victoria-metrics-data
-      - -retentionPeriod=12
-    expose:
-      - "8428"
+      - "--promscrape.config=/etc/prometheus/prometheus.yml"
+      - "--remoteWrite.url=http://victoriametrics:8428/api/v1/write"
+    restart: always
+  # VictoriaMetrics instance, a single process responsible for
+  # storing metrics and serve read requests.
+  victoriametrics:
+    image: docker.io/victoriametrics/victoria-metrics:v1.144.0
+    ports:
+      - 8428:8428
+      - 8089:8089
+      - 8089:8089/udp
+      - 2003:2003
+      - 2003:2003/udp
+      - 4242:4242
+    volumes:
+      - vmdata:/storage
+    command:
+      - "--storageDataPath=/storage"
+      - "--graphiteListenAddr=:2003"
+      - "--opentsdbListenAddr=:4242"
+      - "--httpListenAddr=:8428"
+      - "--influxListenAddr=:8089"
+      - "--vmalert.proxyURL=http://vmalert:8880"
+    restart: always
 
   grafana:
-    image: grafana/grafana:latest
-    restart: unless-stopped
+    image: docker.io/grafana/grafana:12.2.0
+    depends_on:
+      - "victoriametrics"
+    ports:
+      - 3005:3000
+    restart: always
     environment:
-      GF_SERVER_ROOT_URL: https://${DOMAIN:?set DOMAIN}/grafana/
-      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
-    expose:
-      - "3000"
+      - GF_PLUGINS_PREINSTALL=yesoreyeram-infinity-datasource
     volumes:
       - grafanadata:/var/lib/grafana
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
       - ./grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
-      - ../../dashboards:/var/lib/grafana/dashboards:ro
+      - ./../../dashboards/airgradient-one.json:/var/lib/grafana/dashboards/airgradient-one.json
+      - ./../../dashboards/victoriametrics.json:/var/lib/grafana/dashboards/vm.json
+      - ./../../dashboards/vmagent.json:/var/lib/grafana/dashboards/vmagent.json
+      - ./../../dashboards/metrics-explorer.json:/var/lib/grafana/dashboards/metrics-explorer.json
 
   backend:
     build:
@@ -56,9 +66,9 @@ services:
       CACHE_TTL: 10s
       RANGE_CACHE_TTL: 30s
       VM_QUERY_TIMEOUT: 10s
-      ALLOWED_ORIGIN: https://${DOMAIN:?set DOMAIN}
-    expose:
-      - "8080"
+      ALLOWED_ORIGIN: http://192.168.1.200:3000
+    ports:
+      - "8080:8080"
     depends_on:
       - victoriametrics
 
@@ -68,11 +78,12 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:8080
-    expose:
-      - "3000"
+    ports:
+      - "3002:3000"
     depends_on:
       - backend
 
 volumes:
-  vmdata:
-  grafanadata:
+  vmagentdata: {}
+  vmdata: {}
+  grafanadata: {}

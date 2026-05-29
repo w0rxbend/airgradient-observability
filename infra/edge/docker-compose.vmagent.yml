@@ -1,13 +1,13 @@
 services:
   vmagent:
-    image: victoriametrics/vmagent:latest
+    image: docker.io/victoriametrics/vmagent:latest
     restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/vmagent/prometheus.yml:ro
       - vmagentdata:/vmagentdata
     command:
       - -promscrape.config=/etc/vmagent/prometheus.yml
-      - -remoteWrite.url=https://${DOMAIN:?set DOMAIN}/api/v1/write
+      - -remoteWrite.url=http://${VM_HOST:?set VM_HOST}:8428/api/v1/write
       - -remoteWrite.basicAuth.username=${VM_USER:?set VM_USER}
       - -remoteWrite.basicAuth.password=${VM_PASSWORD:?set VM_PASSWORD}
       - -remoteWrite.tmpDataPath=/vmagentdata

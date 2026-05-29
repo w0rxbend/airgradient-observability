@@ -1,5 +1,3 @@
-import { KioskView } from "./kiosk";
+import KioskOledPage from "../features/kiosk/KioskOledPage";
 
-export default function KioskOled() {
-  return <KioskView oled />;
-}
+export default KioskOledPage;

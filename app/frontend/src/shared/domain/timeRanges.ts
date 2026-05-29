@@ -8,6 +8,10 @@ export const timeRanges: Array<{ key: RangeKey; label: string }> = [
   { key: "30d", label: "30d" },
 ];
 
+export function isRangeKey(value: string): value is RangeKey {
+  return timeRanges.some((range) => range.key === value);
+}
+
 export function rangeToStep(range: RangeKey): string {
   switch (range) {
     case "1h":

@@ -1,0 +1,117 @@
+import { createMemo, For, Match, Show, Switch } from "solid-js";
+import { GaugeMetric } from "../../shared/ui/GaugeMetric";
+import { ChartSkeleton, GaugeSkeleton } from "../../shared/ui/LoadingSkeleton";
+import { ThemeToggle } from "../../shared/ui/ThemeToggle";
+import { TimeSeriesChart, type ChartType } from "../../shared/ui/TimeSeriesChart";
+import { createClock, formatRelativeAge } from "../../shared/time/clock";
+import {
+  classicKioskRefreshMs,
+  createKioskClassicData,
+} from "./createKioskClassicData";
+
+const metricColors = [
+  "var(--c-info)",
+  "var(--metric-pm25)",
+  "var(--metric-voc)",
+  "var(--metric-nox)",
+  "var(--metric-temperature)",
+  "var(--metric-humidity)",
+];
+
+const chartTypesByIndex: ChartType[] = ["line", "bar", "histogram", "line", "bar", "histogram"];
+
+export default function KioskPage() {
+  return <KioskView />;
+}
+
+export function KioskView(props: { oled?: boolean }) {
+  const now = createClock();
+  const data = createKioskClassicData();
+
+  const current = data.current;
+  const currentData = data.currentData;
+  const allHistory = data.history;
+  const historyData = data.historyData;
+
+  const clock = createMemo(() =>
+    now().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+  );
+
+  const lastSeen = createMemo(() => formatRelativeAge(currentData()?.timestamp));
+
+  return (
+    <div class={props.oled ? "kiosk kiosk-oled" : "kiosk"}>
+      <Switch>
+        <Match when={current.loading && !currentData()}>
+          <GaugeSkeleton count={6} />
+        </Match>
+        <Match when={current.error && !currentData()}>
+          <div class="error-box">Cannot reach backend.</div>
+        </Match>
+        <Match when={currentData()}>
+          {(data) => (
+            <section class="kiosk-gauge-grid" aria-label="Current sensor readings">
+              <For each={data().metrics}>{(item) => <GaugeMetric metric={item} />}</For>
+            </section>
+          )}
+        </Match>
+      </Switch>
+
+      <Switch>
+        <Match when={allHistory.loading && !historyData()}>
+          <div class="kiosk-chart-grid">
+            <For each={Array.from({ length: 6 })}>{() => <ChartSkeleton />}</For>
+          </div>
+        </Match>
+        <Match when={allHistory.error && !historyData()}>
+          <div class="error-box">Could not load chart data.</div>
+        </Match>
+        <Match when={historyData()}>
+          {(data) => (
+            <div class="kiosk-chart-grid">
+              <For each={data()}>
+                {(resp, index) => (
+                  <TimeSeriesChart
+                    label={resp.label}
+                    unit={resp.unit}
+                    points={resp.points}
+                    color={metricColors[index()]}
+                    initialType={chartTypesByIndex[index()] ?? "line"}
+                  />
+                )}
+              </For>
+            </div>
+          )}
+        </Match>
+      </Switch>
+
+      <footer class="kiosk-footer">
+        <span class="kiosk-brand">AG AirGradient{props.oled ? " OLED" : ""}</span>
+        <span class="kiosk-status">
+          <Show when={currentData() && !current.error}>
+            <span class="status-strip-dot" style={{ "margin-right": "6px" }} />
+          </Show>
+          {current.loading && !currentData()
+            ? "Connecting..."
+              : current.error
+              ? data.hasStaleCurrent()
+                ? `Last good sample ${lastSeen()}`
+                : "Cannot reach backend"
+              : `Updated ${lastSeen()}`}
+          {" - "}
+          Refreshes every {classicKioskRefreshMs / 1000}s
+        </span>
+        <span class="kiosk-footer-actions">
+          <Show when={!props.oled}>
+            <ThemeToggle />
+          </Show>
+          <span class="kiosk-clock">{clock()}</span>
+        </span>
+      </footer>
+    </div>
+  );
+}

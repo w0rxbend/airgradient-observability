@@ -1,3 +1,3 @@
-import KioskOledPage from "../features/kiosk/KioskOledPage";
+import KioskOledPage from "../features/kiosk-classic/KioskOledPage";
 
 export default KioskOledPage;

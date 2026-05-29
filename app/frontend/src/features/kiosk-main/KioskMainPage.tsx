@@ -1,10 +1,10 @@
 import { createMemo, For, Match, Show, Switch } from "solid-js";
 import type { JSX } from "solid-js";
-import { fetchCurrent, type CurrentMetric } from "../../shared/api/backendClient";
+import type { CurrentMetric } from "../../shared/api/backendClient";
 import { overallScore, scoreStatus, type Status } from "../../shared/domain/airQuality";
 import type { MetricKey } from "../../shared/domain/metrics";
-import { createPollingResource } from "../../shared/solid/pollingResource";
-import "../../kiosk-main-material.css";
+import "./kioskMainMaterial.css";
+import { createKioskMainData } from "./createKioskMainData";
 import { MaterialIcon } from "./MaterialIcon";
 import {
   displayMetricValue,
@@ -17,12 +17,11 @@ import {
   sortKioskMetrics,
 } from "./metricPresentation";
 
-const refreshMs = 5_000;
-
 export default function KioskMainPage() {
-  const currentMetrics = createPollingResource(fetchCurrent, refreshMs);
+  const data = createKioskMainData();
 
-  const displayed = createMemo(() => currentMetrics.latest());
+  const current = data.current;
+  const displayed = data.displayed;
   const metrics = createMemo(() => sortKioskMetrics(displayed()?.metrics ?? []));
   const score = createMemo(() => overallScore(metrics().map((metric) => ({ status: metric.status }))));
   const status = createMemo(() => scoreStatus(score()));
@@ -49,20 +48,20 @@ export default function KioskMainPage() {
           </div>
         </div>
 
-        <div class={`mk-sync ${currentMetrics.hasStaleValue() ? "is-stale" : ""}`}>
+        <div class={`mk-sync ${data.hasStaleCurrent() ? "is-stale" : ""}`}>
           <span class="mk-sync-dot" />
           <div>
-            <span>{currentMetrics.hasStaleValue() ? "Last good sample" : "Live sample"}</span>
+            <span>{data.hasStaleCurrent() ? "Last good sample" : "Live sample"}</span>
             <strong>{lastSeen()}</strong>
           </div>
         </div>
       </header>
 
       <Switch>
-        <Match when={currentMetrics.resource.loading && !displayed()}>
+        <Match when={current.loading && !displayed()}>
           <LoadingBoard />
         </Match>
-        <Match when={currentMetrics.resource.error && !displayed()}>
+        <Match when={current.error && !displayed()}>
           <BackendError />
         </Match>
         <Match when={displayed()}>

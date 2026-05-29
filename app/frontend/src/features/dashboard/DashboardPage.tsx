@@ -1,6 +1,5 @@
 import {
   createMemo,
-  createResource,
   createSignal,
   For,
   Match,
@@ -9,25 +8,17 @@ import {
   Switch,
 } from "solid-js";
 import type { JSX } from "solid-js";
-import { AirQualityHeatmap } from "../../components/AirQualityHeatmap";
-import { AirQualityScore } from "../../components/AirQualityScore";
-import { GaugeMetric } from "../../components/GaugeMetric";
-import { ChartSkeleton, GaugeSkeleton } from "../../components/LoadingSkeleton";
-import { RangeSelector } from "../../components/RangeSelector";
-import type { RangeKey } from "../../components/RangeSelector";
-import { ThemeToggle } from "../../components/ThemeToggle";
-import { TimeSeriesChart } from "../../components/TimeSeriesChart";
-import {
-  fetchAllRanges,
-  fetchAllRangesAbsolute,
-  fetchCurrent,
-  fetchDailyScores,
-} from "../../shared/api/backendClient";
+import { GaugeMetric } from "../../shared/ui/GaugeMetric";
+import { ChartSkeleton, GaugeSkeleton } from "../../shared/ui/LoadingSkeleton";
+import { RangeSelector } from "../../shared/ui/RangeSelector";
+import { ThemeToggle } from "../../shared/ui/ThemeToggle";
+import { TimeSeriesChart } from "../../shared/ui/TimeSeriesChart";
+import { AirQualityHeatmap } from "./components/AirQualityHeatmap";
+import { AirQualityScore } from "./components/AirQualityScore";
+import { createDashboardData } from "./createDashboardData";
 import type { MetricKey } from "../../shared/domain/metrics";
-import { createPollingResource } from "../../shared/solid/pollingResource";
+import type { RangeKey } from "../../shared/domain/timeRanges";
 import { formatRelativeAge } from "../../shared/time/clock";
-
-const refreshMs = 5_000;
 
 const metricColors = [
   "var(--c-info)",
@@ -90,10 +81,6 @@ const metricDisplay: Array<{
 export default function DashboardPage() {
   const [range, setRange] = createSignal<RangeKey>("24h");
   const [selectedDate, setSelectedDate] = createSignal<Date | null>(null);
-  const currentMetrics = createPollingResource(fetchCurrent, refreshMs);
-
-  const current = currentMetrics.resource;
-  const displayedCurrent = createMemo(() => currentMetrics.latest());
   const isHistorical = createMemo(() => selectedDate() !== null);
 
   const dateWindow = createMemo(() => {
@@ -109,20 +96,11 @@ export default function DashboardPage() {
     return { from: from.getTime(), to: to.getTime() };
   });
 
-  const [allHistory] = createResource(
-    () => {
-      const window = dateWindow();
-      return window
-        ? { type: "absolute" as const, from: window.from, to: window.to }
-        : { type: "relative" as const, range: range() };
-    },
-    (params) =>
-      params.type === "absolute"
-        ? fetchAllRangesAbsolute(params.from, params.to)
-        : fetchAllRanges(params.range)
-  );
-
-  const [dailyScores] = createResource(fetchDailyScores);
+  const data = createDashboardData(range, dateWindow);
+  const current = data.current;
+  const displayedCurrent = data.displayedCurrent;
+  const allHistory = data.allHistory;
+  const dailyScores = data.dailyScores;
 
   const lastSeen = createMemo(() => formatRelativeAge(displayedCurrent()?.timestamp));
 
@@ -218,7 +196,7 @@ export default function DashboardPage() {
               {current.loading && !displayedCurrent()
                 ? "Connecting..."
                 : current.error
-                  ? currentMetrics.hasStaleValue()
+                    ? data.hasStaleCurrent()
                     ? `Last good sample ${lastSeen()}`
                     : "Offline"
                   : `Updated ${lastSeen()}`}

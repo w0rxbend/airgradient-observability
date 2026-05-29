@@ -1,41 +1,37 @@
 import { createMemo, Match, Show, Switch } from "solid-js";
-import { GaugeAQI } from "../../components/gauges/GaugeAQI";
-import { GaugeCO2 } from "../../components/gauges/GaugeCO2";
-import { GaugeDewPoint } from "../../components/gauges/GaugeDewPoint";
-import { GaugeHum } from "../../components/gauges/GaugeHum";
-import { GaugeNOx } from "../../components/gauges/GaugeNOx";
-import { GaugePM25 } from "../../components/gauges/GaugePM25";
-import { GaugeTVOC } from "../../components/gauges/GaugeTVOC";
-import { GaugeTemp } from "../../components/gauges/GaugeTemp";
-import { dewPoint } from "../../lib/gauges";
-import { pm25ToAqi } from "../../lib/swag";
-import { fetchAllRanges, fetchCurrent } from "../../shared/api/backendClient";
 import type { MetricKey } from "../../shared/domain/metrics";
-import { createPollingResource } from "../../shared/solid/pollingResource";
 import { createClock } from "../../shared/time/clock";
-import "../../kiosk-gauges.css";
-
-const refreshMs = 5_000;
+import {
+  createKioskGaugesData,
+  gaugesRefreshMs,
+} from "./createKioskGaugesData";
+import {
+  aqiFromPm25,
+  currentMetricValue,
+  dewPointTrend,
+  dewPointValue,
+  metricHistoryMap,
+} from "./pageViewModel";
+import { GaugeAQI } from "./components/GaugeAQI";
+import { GaugeCO2 } from "./components/GaugeCO2";
+import { GaugeDewPoint } from "./components/GaugeDewPoint";
+import { GaugeHum } from "./components/GaugeHum";
+import { GaugeNOx } from "./components/GaugeNOx";
+import { GaugePM25 } from "./components/GaugePM25";
+import { GaugeTVOC } from "./components/GaugeTVOC";
+import { GaugeTemp } from "./components/GaugeTemp";
+import "./kioskGauges.css";
 
 export default function KioskGaugesPage() {
   const now = createClock();
-  const currentMetrics = createPollingResource(fetchCurrent, refreshMs);
-  const history = createPollingResource(() => fetchAllRanges("24h"), refreshMs);
+  const data = createKioskGaugesData();
 
-  const current = currentMetrics.resource;
-  const currentData = createMemo(() => currentMetrics.latest());
-  const historyData = createMemo(() => history.latest());
-
-  const historyMap = createMemo(() => {
-    const values: Partial<Record<MetricKey, number[]>> = {};
-    for (const response of historyData() ?? []) {
-      values[response.metric] = response.points.map(([_timestamp, value]) => value);
-    }
-    return values;
-  });
+  const current = data.current;
+  const currentData = data.currentData;
+  const historyMap = createMemo(() => metricHistoryMap(data.historyData()));
 
   const getValue = (key: MetricKey) =>
-    currentData()?.metrics.find((metric) => metric.key === key)?.value ?? null;
+    currentMetricValue(currentData(), key);
   const getSeries = (key: MetricKey) => historyMap()[key] ?? [];
 
   const pm25Val = () => getValue("pm25");
@@ -45,25 +41,11 @@ export default function KioskGaugesPage() {
   const tempVal = () => getValue("temperature");
   const humVal = () => getValue("humidity");
 
-  const aqiVal = () => {
-    const value = pm25Val();
-    return value !== null ? pm25ToAqi(value) : null;
-  };
+  const aqiVal = () => aqiFromPm25(pm25Val());
+  const dpVal = () => dewPointValue(tempVal(), humVal());
 
-  const dpVal = () => {
-    const temperature = tempVal();
-    const humidity = humVal();
-    return temperature !== null && humidity !== null ? dewPoint(temperature, humidity) : null;
-  };
-
-  const aqiTrend = createMemo(() => getSeries("pm25").map((value) => pm25ToAqi(value)));
-
-  const dpTrend = createMemo(() => {
-    const temps = getSeries("temperature");
-    const hums = getSeries("humidity");
-    const length = Math.min(temps.length, hums.length);
-    return Array.from({ length }, (_, index) => dewPoint(temps[index], hums[index]));
-  });
+  const aqiTrend = createMemo(() => getSeries("pm25").map((value) => aqiFromPm25(value) ?? 0));
+  const dpTrend = createMemo(() => dewPointTrend(getSeries("temperature"), getSeries("humidity")));
 
   const uplinkAge = () => {
     const timestamp = currentData()?.timestamp;
@@ -99,7 +81,7 @@ export default function KioskGaugesPage() {
             <div class="gi-brand-text">
               <span class="gi-brand-name">AIR ONE - GAUGES</span>
               <span class="gi-brand-sub">
-                Live indoor air quality - auto-refresh {refreshMs / 1_000}s
+                Live indoor air quality - auto-refresh {gaugesRefreshMs / 1_000}s
               </span>
             </div>
           </div>

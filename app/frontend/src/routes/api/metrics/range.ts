@@ -1,4 +1,4 @@
-import { proxyBackend } from "../../../lib/serverBackend";
+import { proxyBackend } from "../../../shared/api/serverBackendGateway";
 import {
   validateRangeRequest,
   validationErrorResponse,

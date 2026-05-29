@@ -105,3 +105,8 @@ export function formatMetricValue(value: number | null) {
   if (Math.abs(value) >= 100) return value.toFixed(0);
   return value.toFixed(1);
 }
+
+export function formatMetricNumber(value: number | null, decimals = 1): string {
+  if (value === null) return "-";
+  return Math.abs(value) >= 100 ? value.toFixed(0) : value.toFixed(decimals);
+}

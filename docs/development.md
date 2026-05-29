@@ -144,6 +144,8 @@ Validate the Caddy config through the container:
 ```bash
 cd infra/oci
 DOMAIN=example.com BASIC_AUTH_USER=user BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=airgradient-backend:local \
+FRONTEND_IMAGE=airgradient-frontend:local \
 docker compose -f docker-compose.vm.yml run --rm caddy caddy validate --config /etc/caddy/Caddyfile
 ```
 

@@ -143,6 +143,8 @@ Validate config:
 ```bash
 cd infra/oci
 DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml run --rm caddy caddy validate --config /etc/caddy/Caddyfile
 ```
 
@@ -305,6 +307,8 @@ Render config:
 ```bash
 cd infra/oci
 DOMAIN=example.com BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml config
 
 cd ../edge/vm-agent-airgradient
@@ -345,6 +349,8 @@ Restart OCI services:
 ```bash
 cd infra/oci
 DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml restart victoriametrics backend grafana caddy
 ```
 

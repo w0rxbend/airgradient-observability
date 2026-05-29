@@ -13,18 +13,27 @@ import type { JSX } from "solid-js";
 import type { CurrentMetric, CurrentResponse } from "../lib/backend";
 import { fetchCurrent } from "../lib/backend";
 import { overallScore, scoreStatus, type Status } from "../lib/thresholds";
+import "../kiosk-main-material.css";
 
 const REFRESH_MS = 5_000;
 const METRIC_ORDER = ["co2", "pm25", "voc", "nox", "temperature", "humidity"];
-const PRIMARY_ORDER = ["temperature", "humidity", "co2"];
 
-const METRIC_ACCENT: Record<string, string> = {
-  co2: "var(--c-info)",
-  pm25: "var(--metric-pm25)",
-  voc: "var(--metric-voc)",
-  nox: "var(--metric-nox)",
-  temperature: "var(--metric-temperature)",
-  humidity: "var(--metric-humidity)",
+const METRIC_TONE: Record<string, string> = {
+  co2: "#3f6fd9",
+  pm25: "#b26a00",
+  voc: "#7750a6",
+  nox: "#9c4328",
+  temperature: "#ba1a1a",
+  humidity: "#006a6a",
+};
+
+const METRIC_ICON: Record<string, string> = {
+  co2: "cloud",
+  pm25: "grain",
+  voc: "bubble",
+  nox: "bolt",
+  temperature: "thermostat",
+  humidity: "water",
 };
 
 export default function KioskMain() {
@@ -48,11 +57,12 @@ export default function KioskMain() {
     overallScore(metrics().map((metric) => ({ status: metric.status as Status })))
   );
   const status = createMemo(() => scoreStatus(score()));
-  const primaryMetrics = createMemo(() =>
-    PRIMARY_ORDER
-      .map((key) => metrics().find((metric) => metric.key === key))
-      .filter(Boolean) as CurrentMetric[]
-  );
+  const temperature = createMemo(() => findMetric(metrics(), "temperature"));
+  const humidity = createMemo(() => findMetric(metrics(), "humidity"));
+  const co2 = createMemo(() => findMetric(metrics(), "co2"));
+  const pm25 = createMemo(() => findMetric(metrics(), "pm25"));
+  const voc = createMemo(() => findMetric(metrics(), "voc"));
+  const nox = createMemo(() => findMetric(metrics(), "nox"));
 
   const lastSeen = createMemo(() => {
     const ts = displayed()?.timestamp;
@@ -65,41 +75,68 @@ export default function KioskMain() {
   });
 
   return (
-    <main class="km2-shell" aria-label="AirGradient kiosk overview">
-      <div class="km2-ambient orb-a" />
-      <div class="km2-ambient orb-b" />
-      <div class="km2-ambient veil" />
-
-      <header class="km2-header">
-        <div>
-          <p>AirGradient Live</p>
-          <h1>Indoor Air</h1>
+    <main class="mk-shell" aria-label="AirGradient kiosk overview">
+      <header class="mk-topbar">
+        <div class="mk-brand">
+          <span class="mk-brand-mark" aria-hidden="true">
+            <MaterialIcon name="dashboard" />
+          </span>
+          <div>
+            <p class="mk-label">AirGradient ONE</p>
+            <h1>Indoor Air Dashboard</h1>
+          </div>
         </div>
-        <div class={`km2-sync ${degraded() ? "stale" : ""}`}>
-          <span />
-          <strong>{lastSeen()}</strong>
-          <Show when={degraded()}>
-            <em>stale</em>
-          </Show>
+
+        <div class={`mk-sync ${degraded() ? "is-stale" : ""}`}>
+          <span class="mk-sync-dot" />
+          <div>
+            <span>{degraded() ? "Last good sample" : "Live sample"}</span>
+            <strong>{lastSeen()}</strong>
+          </div>
         </div>
       </header>
 
       <Switch>
         <Match when={current.loading && !displayed()}>
-          <section class="km2-loading" aria-busy="true">
-            <For each={Array.from({ length: 8 })}>
-              {() => <div />}
-            </For>
-          </section>
+          <LoadingBoard />
         </Match>
         <Match when={current.error && !displayed()}>
-          <div class="error-box">Cannot reach backend.</div>
+          <section class="mk-error" role="status">
+            <MaterialIcon name="warning" />
+            <div>
+              <strong>Cannot reach backend</strong>
+              <span>Waiting for the next successful sample.</span>
+            </div>
+          </section>
         </Match>
         <Match when={displayed()}>
-          <section class="km2-board">
-            <QualityHero score={score()} status={status()} />
-            <PrimaryCluster metrics={primaryMetrics()} />
-            <MetricMatrix metrics={metrics()} />
+          <section class="mk-layout">
+            <ScorePanel score={score()} status={status()} />
+
+            <section class="mk-column mk-comfort" aria-label="Comfort readings">
+              <SectionHeader icon="home" label="Comfort" title="Room conditions" />
+              <div class="mk-split">
+                <Show when={temperature()}>{(metric) => <LargeMetric metric={metric()} />}</Show>
+                <Show when={humidity()}>{(metric) => <LargeMetric metric={metric()} />}</Show>
+              </div>
+            </section>
+
+            <section class="mk-column mk-pollutants" aria-label="Pollutant readings">
+              <SectionHeader icon="science" label="Pollutants" title="Air composition" />
+              <div class="mk-pollutant-grid">
+                <Show when={co2()}>{(metric) => <MetricCard metric={metric()} prominent />}</Show>
+                <Show when={pm25()}>{(metric) => <MetricCard metric={metric()} />}</Show>
+                <Show when={voc()}>{(metric) => <MetricCard metric={metric()} />}</Show>
+                <Show when={nox()}>{(metric) => <MetricCard metric={metric()} />}</Show>
+              </div>
+            </section>
+
+            <section class="mk-column mk-all" aria-label="All current readings">
+              <SectionHeader icon="sensors" label="Sensors" title="Current metrics" />
+              <div class="mk-list">
+                <For each={metrics()}>{(metric) => <MetricRow metric={metric} />}</For>
+              </div>
+            </section>
           </section>
         </Match>
       </Switch>
@@ -107,143 +144,194 @@ export default function KioskMain() {
   );
 }
 
-function QualityHero(props: { score: number; status: Status }) {
+function ScorePanel(props: { score: number; status: Status }) {
+  return (
+    <section class={`mk-score-card ${props.status}`}>
+      <div class="mk-score-head">
+        <SectionHeader icon="air" label="Overall" title="Air quality" />
+        <StatusChip status={props.status} />
+      </div>
+
+      <div
+        class="mk-score-ring"
+        style={{ "--score": `${props.score}%` } as JSX.CSSProperties}
+        aria-label={`Air score ${props.score}`}
+      >
+        <div class="mk-score-ring-inner">
+          <strong>{props.score}</strong>
+          <span>{statusText(props.status)}</span>
+        </div>
+      </div>
+
+      <div class="mk-score-scale" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+    </section>
+  );
+}
+
+function LargeMetric(props: { metric: CurrentMetric }) {
   return (
     <article
-      class={`km2-card km2-hero ${props.status}`}
-      style={{ "--score": props.score } as JSX.CSSProperties}
+      class={`mk-large-card ${props.metric.status}`}
+      style={toneStyle(props.metric)}
     >
-      <div class="km2-hero-copy">
-        <p>Air score</p>
-        <strong>{props.score}</strong>
-        <span>{statusText(props.status)}</span>
+      <div class="mk-card-icon">
+        <MetricIcon metric={props.metric} />
       </div>
-      <div class="km2-hero-meter" aria-hidden="true">
-        <span style={{ width: `${props.score}%` }} />
-      </div>
-      <div class="km2-score-band" aria-hidden="true">
-        <For each={Array.from({ length: 24 })}>
-          {(_, index) => (
-            <i
-              style={{
-                "--delay": `${index() * 45}ms`,
-                opacity: index() < Math.round((props.score / 100) * 24) ? 1 : 0.18,
-              } as JSX.CSSProperties}
-            />
-          )}
-        </For>
-      </div>
-    </article>
-  );
-}
-
-function PrimaryCluster(props: { metrics: CurrentMetric[] }) {
-  return (
-    <article class="km2-card km2-primary-card">
-      <header>
-        <span>Now</span>
-        <strong>Core readings</strong>
-      </header>
-      <div class="km2-primary-list">
-        <For each={props.metrics}>
-          {(metric) => <PrimaryReadout metric={metric} />}
-        </For>
-      </div>
-    </article>
-  );
-}
-
-function PrimaryReadout(props: { metric: CurrentMetric }) {
-  return (
-    <div
-      class="km2-primary"
-      style={{ "--accent": accent(props.metric), "--pct": pct(props.metric) } as JSX.CSSProperties}
-    >
-      <MetricGlyph metric={props.metric} compact />
-      <div>
+      <div class="mk-large-value">
         <span>{shortLabel(props.metric)}</span>
         <strong>
           {formatValue(props.metric.value)}
           <small>{props.metric.unit}</small>
         </strong>
       </div>
-      <i />
-    </div>
-  );
-}
-
-function MetricMatrix(props: { metrics: CurrentMetric[] }) {
-  return (
-    <section class="km2-metrics" aria-label="Current sensor readings">
-      <For each={props.metrics}>
-        {(metric) => <MetricTile metric={metric} />}
-      </For>
-    </section>
-  );
-}
-
-function MetricTile(props: { metric: CurrentMetric }) {
-  const valuePct = () => pct(props.metric);
-  return (
-    <article
-      class={`km2-card km2-tile ${props.metric.status}`}
-      style={{ "--accent": accent(props.metric), "--pct": valuePct() } as JSX.CSSProperties}
-    >
-      <header>
-        <MetricGlyph metric={props.metric} />
-        <span>{props.metric.label}</span>
-      </header>
-      <div class="km2-value">
-        {formatValue(props.metric.value)}
-        <small>{props.metric.unit}</small>
-      </div>
-      <MetricBar metric={props.metric} />
+      <ProgressBar metric={props.metric} />
     </article>
   );
 }
 
-function MetricBar(props: { metric: CurrentMetric }) {
-  const valuePct = () => pct(props.metric);
+function MetricCard(props: { metric: CurrentMetric; prominent?: boolean }) {
   return (
-    <div class="km2-meter" aria-hidden="true">
-      <span style={{ width: `${Math.round(valuePct() * 100)}%` }} />
-      <i style={{ left: `${Math.round(valuePct() * 100)}%` }} />
+    <article
+      class={`mk-card ${props.metric.status} ${props.prominent ? "is-prominent" : ""}`}
+      style={toneStyle(props.metric)}
+    >
+      <header>
+        <div class="mk-card-icon">
+          <MetricIcon metric={props.metric} />
+        </div>
+        <StatusChip status={props.metric.status as Status} compact />
+      </header>
+      <div class="mk-card-title">{props.metric.label}</div>
+      <div class="mk-card-value">
+        {formatValue(props.metric.value)}
+        <small>{props.metric.unit}</small>
+      </div>
+      <ProgressBar metric={props.metric} />
+    </article>
+  );
+}
+
+function MetricRow(props: { metric: CurrentMetric }) {
+  return (
+    <article class="mk-row" style={toneStyle(props.metric)}>
+      <div class="mk-row-leading">
+        <span class="mk-row-icon">
+          <MetricIcon metric={props.metric} />
+        </span>
+        <div>
+          <strong>{props.metric.label}</strong>
+          <span>{statusText(props.metric.status as Status)}</span>
+        </div>
+      </div>
+      <div class="mk-row-value">
+        {formatValue(props.metric.value)}
+        <small>{props.metric.unit}</small>
+      </div>
+    </article>
+  );
+}
+
+function SectionHeader(props: { icon: string; label: string; title: string }) {
+  return (
+    <header class="mk-section-header">
+      <span class="mk-section-icon" aria-hidden="true">
+        <MaterialIcon name={props.icon} />
+      </span>
+      <div>
+        <span>{props.label}</span>
+        <strong>{props.title}</strong>
+      </div>
+    </header>
+  );
+}
+
+function StatusChip(props: { status: Status; compact?: boolean }) {
+  return (
+    <span class={`mk-chip ${props.status} ${props.compact ? "compact" : ""}`}>
+      {statusText(props.status)}
+    </span>
+  );
+}
+
+function ProgressBar(props: { metric: CurrentMetric }) {
+  return (
+    <div class="mk-progress" aria-hidden="true">
+      <span style={{ width: `${Math.round(percent(props.metric) * 100)}%` }} />
     </div>
   );
 }
 
-function MetricGlyph(props: { metric: CurrentMetric; compact?: boolean }) {
-  const key = () => props.metric.key;
+function LoadingBoard() {
   return (
-    <svg class={props.compact ? "km2-glyph compact" : "km2-glyph"} viewBox="0 0 40 40" aria-hidden="true">
-      <Show when={key() === "temperature"}>
-        <path d="M17 7a5 5 0 0 1 10 0v14a9 9 0 1 1-10 0z" />
-        <path d="M22 11v15" />
-        <path d="M29 9h5M29 16h4M29 23h5" />
-      </Show>
-      <Show when={key() === "humidity"}>
-        <path d="M20 4C15 14 9 19 9 27a11 11 0 0 0 22 0c0-8-6-13-11-23z" />
-        <path d="M15 27c3 4 7 4 10 0" />
-      </Show>
-      <Show when={key() === "co2"}>
-        <path d="M8 25h22a7 7 0 0 0-2-13 10 10 0 0 0-19-1 7 7 0 0 0-1 14z" />
-        <path d="M11 31c4-3 7 2 11-1s6-1 8 1" />
-      </Show>
-      <Show when={key() === "pm25"}>
-        <circle cx="12" cy="13" r="4" />
-        <circle cx="25" cy="11" r="3" />
-        <circle cx="25" cy="25" r="5" />
-        <circle cx="12" cy="26" r="3" />
-        <circle cx="19" cy="19" r="2" />
-      </Show>
-      <Show when={key() === "voc"}>
-        <path d="M10 25h20c4 0 6-3 6-6s-3-6-7-6A10 10 0 0 0 10 9a7 7 0 0 0 0 16z" />
-        <path d="M13 30c5 3 10 3 15 0" />
-      </Show>
-      <Show when={key() === "nox"}>
-        <path d="M22 3 9 21h10l-2 16 14-22H20z" />
-        <path d="M7 9c3-2 6-2 9 0M25 31c3 2 6 2 9 0" />
-      </Show>
+    <section class="mk-loading" aria-busy="true">
+      <For each={Array.from({ length: 8 })}>{() => <div />}</For>
+    </section>
+  );
+}
+
+function MetricIcon(props: { metric: CurrentMetric }) {
+  return <MaterialIcon name={METRIC_ICON[props.metric.key] ?? "sensors"} />;
+}
+
+function MaterialIcon(props: { name: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <Switch fallback={<path d="M5 12h14M12 5v14" />}>
+        <Match when={props.name === "dashboard"}>
+          <path d="M4 5a1 1 0 0 1 1-1h6v7H4zM13 4h6a1 1 0 0 1 1 1v4h-7zM4 13h7v7H5a1 1 0 0 1-1-1zM13 11h7v8a1 1 0 0 1-1 1h-6z" />
+        </Match>
+        <Match when={props.name === "air"}>
+          <path d="M4 8h10a3 3 0 1 0-3-3" />
+          <path d="M3 12h16a3 3 0 1 1-3 3" />
+          <path d="M5 17h7a2 2 0 1 1-2 2" />
+        </Match>
+        <Match when={props.name === "home"}>
+          <path d="m3 11 9-7 9 7" />
+          <path d="M5 10v10h14V10" />
+          <path d="M10 20v-6h4v6" />
+        </Match>
+        <Match when={props.name === "science"}>
+          <path d="M10 3h4M11 3v5l-6 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3L13 8V3" />
+          <path d="M8 15h8" />
+        </Match>
+        <Match when={props.name === "sensors"}>
+          <path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+          <path d="M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14" />
+        </Match>
+        <Match when={props.name === "warning"}>
+          <path d="M12 3 2 21h20z" />
+          <path d="M12 9v5M12 17h.01" />
+        </Match>
+        <Match when={props.name === "thermostat"}>
+          <path d="M10 4a2 2 0 0 1 4 0v8.2a5 5 0 1 1-4 0z" />
+          <path d="M12 7v8" />
+        </Match>
+        <Match when={props.name === "water"}>
+          <path d="M12 3C8 8 6 11 6 15a6 6 0 0 0 12 0c0-4-2-7-6-12z" />
+        </Match>
+        <Match when={props.name === "cloud"}>
+          <path d="M6 18h11a4 4 0 0 0 .5-8 6 6 0 0 0-11.2 1.8A3.2 3.2 0 0 0 6 18z" />
+        </Match>
+        <Match when={props.name === "grain"}>
+          <circle cx="7" cy="8" r="1.5" />
+          <circle cx="14" cy="6" r="1.5" />
+          <circle cx="17" cy="13" r="1.5" />
+          <circle cx="8" cy="16" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+        </Match>
+        <Match when={props.name === "bubble"}>
+          <circle cx="8" cy="14" r="4" />
+          <circle cx="15" cy="8" r="3" />
+          <circle cx="17" cy="17" r="2" />
+        </Match>
+        <Match when={props.name === "bolt"}>
+          <path d="m13 2-8 12h6l-1 8 9-13h-6z" />
+        </Match>
+      </Switch>
     </svg>
   );
 }
@@ -252,13 +340,18 @@ function sortMetrics(metrics: CurrentMetric[]) {
   return [...metrics].sort((a, b) => METRIC_ORDER.indexOf(a.key) - METRIC_ORDER.indexOf(b.key));
 }
 
-function pct(metric: CurrentMetric) {
-  if (metric.value === null) return 0;
-  return Math.max(0, Math.min(1, (metric.value - metric.min) / ((metric.max - metric.min) || 1)));
+function findMetric(metrics: CurrentMetric[], key: string) {
+  return metrics.find((metric) => metric.key === key);
 }
 
-function accent(metric: CurrentMetric) {
-  return METRIC_ACCENT[metric.key] ?? "var(--c-info)";
+function percent(metric: CurrentMetric) {
+  if (metric.value === null) return 0;
+  const range = metric.max - metric.min || 1;
+  return Math.max(0, Math.min(1, (metric.value - metric.min) / range));
+}
+
+function toneStyle(metric: CurrentMetric) {
+  return { "--metric-tone": METRIC_TONE[metric.key] ?? "#3f6fd9" } as JSX.CSSProperties;
 }
 
 function formatValue(value: number | null) {
@@ -268,14 +361,14 @@ function formatValue(value: number | null) {
 }
 
 function shortLabel(metric: CurrentMetric) {
-  if (metric.key === "temperature") return "Temp";
-  if (metric.key === "humidity") return "Hum";
+  if (metric.key === "temperature") return "Temperature";
+  if (metric.key === "humidity") return "Humidity";
   return metric.label;
 }
 
-function statusText(status: Status) {
-  if (status === "good") return "clear";
-  if (status === "warning") return "watch";
-  if (status === "critical") return "alert";
-  return "quiet";
+function statusText(status: Status | CurrentMetric["status"]) {
+  if (status === "good") return "Good";
+  if (status === "warning") return "Watch";
+  if (status === "critical") return "Alert";
+  return "No data";
 }

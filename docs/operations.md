@@ -122,6 +122,8 @@ Caddy obtains and renews certificates automatically when `80/tcp` and `443/tcp` 
 ```bash
 cd infra/oci
 DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml restart caddy
 ```
 
@@ -139,6 +141,8 @@ To rotate Basic Auth:
 cd infra/oci
 docker run --rm caddy:2-alpine caddy hash-password --plaintext 'NEW_PASSWORD'
 DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml up -d caddy
 ```
 

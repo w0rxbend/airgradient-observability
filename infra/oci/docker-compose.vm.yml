@@ -67,7 +67,10 @@ services:
     image: ${FRONTEND_IMAGE:?set FRONTEND_IMAGE}
     restart: unless-stopped
     environment:
-      BACKEND_URL: http://backend:8080
+      BACKEND_URL: ${BACKEND_URL:-}
+      FRONTEND_CONFIG_FILE: ${FRONTEND_CONFIG_FILE:-/app/config.json}
+    volumes:
+      - ./frontend.config.json:/app/config.json:ro
     depends_on:
       - backend
 

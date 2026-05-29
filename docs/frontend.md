@@ -11,4 +11,24 @@ Relevant non-frontend contracts:
 - Caddy routing: [Architecture](architecture.md)
 - deployment service layout: [Deployment](deployment.md)
 
+## Backend Proxy Configuration
+
+The browser calls same-origin `/api/...` routes. The frontend server proxies those requests to the backend.
+
+Resolution order:
+
+1. `BACKEND_URL`
+2. JSON config file from `FRONTEND_CONFIG_FILE`
+3. `http://localhost:8081`
+
+JSON config format:
+
+```json
+{
+  "backendUrl": "http://backend:8080"
+}
+```
+
+OCI mounts `infra/oci/frontend.config.json` as `/app/config.json`.
+
 Do not use this page as a frontend development guide.

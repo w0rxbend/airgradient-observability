@@ -45,7 +45,7 @@ cd app/backend
 VM_URL=http://localhost:8428 go run ./cmd/server
 ```
 
-With VictoriaMetrics through authenticated Nginx:
+With VictoriaMetrics through authenticated Caddy:
 
 ```bash
 cd app/backend

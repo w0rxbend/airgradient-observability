@@ -1,31 +1,26 @@
 services:
-  #  Metrics collector.
-  #  It scrapes targets defined in --promscrape.config
-  #  And forward them to --remoteWrite.url
-  vmagent:
-    image: docker.io/victoriametrics/vmagent:v1.144.0
+  caddy:
+    image: docker.io/caddy:2-alpine
+    restart: unless-stopped
     depends_on:
-      - "victoriametrics"
+      - victoriametrics
+      - grafana
+      - backend
+      - frontend
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-vmwriter}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?set BASIC_AUTH_HASH}
     ports:
-      - 8429:8429
+      - "80:80"
+      - "443:443"
     volumes:
-      - vmagentdata:/vmagentdata
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - "--promscrape.config=/etc/prometheus/prometheus.yml"
-      - "--remoteWrite.url=http://victoriametrics:8428/api/v1/write"
-    restart: always
-  # VictoriaMetrics instance, a single process responsible for
-  # storing metrics and serve read requests.
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+
   victoriametrics:
     image: docker.io/victoriametrics/victoria-metrics:v1.144.0
-    ports:
-      - 8428:8428
-      - 8089:8089
-      - 8089:8089/udp
-      - 2003:2003
-      - 2003:2003/udp
-      - 4242:4242
     volumes:
       - vmdata:/storage
     command:
@@ -34,18 +29,17 @@ services:
       - "--opentsdbListenAddr=:4242"
       - "--httpListenAddr=:8428"
       - "--influxListenAddr=:8089"
-      - "--vmalert.proxyURL=http://vmalert:8880"
     restart: always
 
   grafana:
     image: docker.io/grafana/grafana:12.2.0
     depends_on:
       - "victoriametrics"
-    ports:
-      - 3005:3000
     restart: always
     environment:
-      - GF_PLUGINS_PREINSTALL=yesoreyeram-infinity-datasource
+      GF_PLUGINS_PREINSTALL: yesoreyeram-infinity-datasource
+      GF_SERVER_ROOT_URL: https://${DOMAIN:?set DOMAIN}/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - grafanadata:/var/lib/grafana
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
@@ -66,9 +60,7 @@ services:
       CACHE_TTL: 10s
       RANGE_CACHE_TTL: 30s
       VM_QUERY_TIMEOUT: 10s
-      ALLOWED_ORIGIN: http://192.168.1.200:3000
-    ports:
-      - "8080:8080"
+      ALLOWED_ORIGIN: https://${DOMAIN:?set DOMAIN}
     depends_on:
       - victoriametrics
 
@@ -78,12 +70,11 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:8080
-    ports:
-      - "3002:3000"
     depends_on:
       - backend
 
 volumes:
-  vmagentdata: {}
+  caddydata: {}
+  caddyconfig: {}
   vmdata: {}
   grafanadata: {}

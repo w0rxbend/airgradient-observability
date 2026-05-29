@@ -1,6 +1,6 @@
 # API Reference
 
-The Go backend owns the public JSON API. In production, Nginx proxies `/api/` to the backend.
+The Go backend owns the public JSON API. In production, Caddy proxies `/api/` to the backend.
 
 Local base URL:
 
@@ -14,7 +14,7 @@ Production base URL:
 https://YOUR_DOMAIN
 ```
 
-Production examples include Basic Auth because the current Nginx config protects `/api/`.
+Production examples include Basic Auth because the current Caddy config protects `/api/`.
 
 ## Health
 
@@ -23,7 +23,7 @@ GET /healthz
 GET /api/healthz
 ```
 
-`/healthz` is useful inside the Docker network or when running the backend directly. `/api/healthz` is useful through Nginx.
+`/healthz` is useful inside the Docker network or when running the backend directly. `/api/healthz` is useful through Caddy.
 
 Response:
 

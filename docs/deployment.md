@@ -1,6 +1,6 @@
 # Deployment
 
-This guide deploys the non-frontend observability stack: LAN `vmagent`, OCI Nginx, VictoriaMetrics, Grafana, and the Go backend. The Compose stack also starts the frontend service because Nginx routes `/` to it, but frontend implementation is not covered here.
+This guide deploys the non-frontend observability stack: LAN `vmagent`, OCI Caddy, VictoriaMetrics, Grafana, and the Go backend. The Compose stack also starts the frontend service because Caddy routes `/` to it, but frontend implementation is not covered here.
 
 ## Prerequisites
 
@@ -10,7 +10,6 @@ OCI host:
 - Docker Engine with Compose v2
 - inbound firewall allowing `80/tcp` and `443/tcp`
 - persistent disk capacity for VictoriaMetrics retention
-- TLS certificate files available under `infra/oci/certs`
 
 LAN edge host:
 
@@ -24,7 +23,7 @@ Workstation:
 - repository checkout
 - ability to copy files to both hosts
 
-## 1. Prepare DNS And TLS
+## 1. Prepare DNS
 
 Point the production domain at the OCI host:
 
@@ -32,29 +31,22 @@ Point the production domain at the OCI host:
 metrics.example.com -> OCI public IP
 ```
 
-Place certificates on the OCI host:
-
-```text
-infra/oci/certs/fullchain.pem
-infra/oci/certs/privkey.pem
-```
-
-Nginx expects those exact paths inside `infra/oci`.
+Caddy obtains and renews HTTPS certificates automatically. Make sure OCI security lists, network security groups, and the host firewall allow inbound `80/tcp` and `443/tcp`.
 
 ## 2. Create Basic Auth Credentials
 
-Create `infra/oci/.htpasswd`:
+Generate a Caddy bcrypt password hash:
 
 ```bash
 cd infra/oci
-docker run --rm httpd:2.4-alpine htpasswd -Bbn airgradient 'CHANGE_ME' > .htpasswd
+docker run --rm caddy:2-alpine caddy hash-password --plaintext 'CHANGE_ME'
 ```
 
-Use a strong password. This credential protects remote write, the backend API, Grafana, and direct VictoriaMetrics debug access in the current Nginx config.
+Use a strong password. Save the resulting hash in your shell or `infra/oci/.env` as `BASIC_AUTH_HASH`. The edge collector's `VM_USER` and `VM_PASSWORD` must match this Basic Auth user and the plaintext password used to create the hash. This credential protects remote write, the backend API, Grafana, and direct VictoriaMetrics debug access in the current Caddy config.
 
 ## 3. Configure Edge Scraping
 
-Edit `infra/edge/prometheus.yml`:
+Edit `infra/edge/vm-agent-airgradient/prometheus.yml`:
 
 ```yaml
 targets:
@@ -82,23 +74,28 @@ From the OCI host:
 
 ```bash
 cd infra/oci
-DOMAIN=metrics.example.com docker compose -f docker-compose.vm.yml up -d
+DOMAIN=metrics.example.com \
+BASIC_AUTH_USER=airgradient \
+BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml up -d
 ```
 
 Check status:
 
 ```bash
 docker compose -f docker-compose.vm.yml ps
-docker compose -f docker-compose.vm.yml logs --tail=100 nginx
+docker compose -f docker-compose.vm.yml logs --tail=100 caddy
 docker compose -f docker-compose.vm.yml logs --tail=100 victoriametrics
 docker compose -f docker-compose.vm.yml logs --tail=100 backend
 ```
 
-Validate Nginx config if startup fails:
+Validate the rendered Compose config if startup fails:
 
 ```bash
-docker compose -f docker-compose.vm.yml run --rm nginx \
-  /bin/sh -c "envsubst '\$DOMAIN' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -t"
+DOMAIN=metrics.example.com \
+BASIC_AUTH_USER=airgradient \
+BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml config
 ```
 
 ## 5. Start The Edge Collector
@@ -106,7 +103,7 @@ docker compose -f docker-compose.vm.yml run --rm nginx \
 From the LAN edge host:
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 DOMAIN=metrics.example.com \
 VM_USER=airgradient \
 VM_PASSWORD='CHANGE_ME' \
@@ -116,7 +113,7 @@ docker compose -f docker-compose.vmagent.yml up -d
 Check logs:
 
 ```bash
-docker compose -f docker-compose.vmagent.yml logs -f vmagent
+docker compose -f docker-compose.vmagent.yml logs -f vmagent-airgradient
 ```
 
 `vmagent` should scrape locally and remote-write to:
@@ -155,7 +152,7 @@ airgradient_humidity_percent
 
 ## 7. Verify Backend API
 
-Through public Nginx:
+Through public Caddy:
 
 ```bash
 curl -u airgradient:'CHANGE_ME' \
@@ -203,7 +200,7 @@ Before relying on this stack:
 - decide whether `/victoriametrics/` should remain publicly routed
 - create a restore drill for VictoriaMetrics data
 - add monitoring or alerts for stale samples and failed remote writes
-- record operating passwords and certificate renewal steps in your secret-management system
+- record operating passwords in your secret-management system
 
 ## Updating A Deployment
 
@@ -211,13 +208,16 @@ Pull new repository changes, review diffs, then:
 
 ```bash
 cd infra/oci
-DOMAIN=metrics.example.com docker compose -f docker-compose.vm.yml up -d --build
+DOMAIN=metrics.example.com \
+BASIC_AUTH_USER=airgradient \
+BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml up -d --build
 ```
 
 For edge config changes:
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 DOMAIN=metrics.example.com \
 VM_USER=airgradient \
 VM_PASSWORD='CHANGE_ME' \

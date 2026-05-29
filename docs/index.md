@@ -29,7 +29,7 @@ This documentation covers the production observability stack excluding frontend 
 | Area | Path | Purpose |
 |---|---|---|
 | Edge collector | `infra/edge/` | `vmagent` Compose file and Prometheus scrape config |
-| OCI stack | `infra/oci/` | Docker Compose, Nginx, Grafana provisioning |
+| OCI stack | `infra/oci/` | Docker Compose, Caddy, Grafana provisioning |
 | Backend API | `app/backend/` | Go service that queries VictoriaMetrics |
 | Mock API | `app/mock-server/` | Generated API data for local development and demos |
 | Dashboards | `dashboards/` | Grafana dashboard JSON |
@@ -43,7 +43,7 @@ Production should satisfy these invariants:
 - AirGradient is scraped only from the LAN.
 - `vmagent` is the only writer into VictoriaMetrics.
 - VictoriaMetrics is not exposed directly on the public internet.
-- Nginx is the only public entry point on the OCI VM.
+- Caddy is the only public entry point on the OCI VM.
 - public HTTP routes require TLS and Basic Auth.
 - the backend is the only custom service that queries VictoriaMetrics for app data.
 - Grafana uses the internal Docker-network VictoriaMetrics URL.
@@ -51,4 +51,4 @@ Production should satisfy these invariants:
 
 ## Frontend Scope
 
-The repository includes `app/frontend`, but frontend implementation is intentionally excluded from this documentation pass. Where needed, docs mention the frontend only as a service behind Nginx or as a consumer of the backend API contract.
+The repository includes `app/frontend`, but frontend implementation is intentionally excluded from this documentation pass. Where needed, docs mention the frontend only as a service behind Caddy or as a consumer of the backend API contract.

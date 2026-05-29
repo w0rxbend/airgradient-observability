@@ -12,7 +12,7 @@ The stack is designed for a small self-hosted deployment with a private LAN sens
 
 ## Public Endpoint Inventory
 
-Expected public ingress is Nginx on:
+Expected public ingress is Caddy on:
 
 - `80/tcp`: HTTP redirect or certificate challenge flow
 - `443/tcp`: HTTPS application and ingestion traffic
@@ -44,10 +44,11 @@ Do not add host `ports:` mappings for those services unless you intentionally ch
 
 ## Authentication
 
-The current deployment uses one Nginx Basic Auth file:
+The current deployment uses one Caddy Basic Auth user and bcrypt hash:
 
 ```text
-infra/oci/.htpasswd
+BASIC_AUTH_USER
+BASIC_AUTH_HASH
 ```
 
 This is simple and adequate for initial self-hosting. Production improvements:
@@ -59,25 +60,16 @@ This is simple and adequate for initial self-hosting. Production improvements:
 
 ## TLS
 
-Nginx expects:
-
-```text
-infra/oci/certs/fullchain.pem
-infra/oci/certs/privkey.pem
-```
-
 Operational requirements:
 
-- automate or calendar certificate renewal
-- restart Nginx after replacing cert files
+- keep `80/tcp` and `443/tcp` reachable so Caddy can issue and renew certificates
 - monitor certificate expiration
-- use modern TLS defaults from the base Nginx image or provide a hardened config if exposed broadly
+- use Caddy's modern TLS defaults unless there is a specific policy reason to override them
 
 ## Secrets
 
 Do not commit:
 
-- `.htpasswd`
 - private keys
 - real production `.env` files
 - Grafana admin passwords
@@ -107,7 +99,7 @@ Production Compose sets it to:
 ALLOWED_ORIGIN=https://${DOMAIN}
 ```
 
-Because public production traffic goes through same-origin Nginx routes, CORS should not be the primary security boundary. Treat it as browser hygiene, not access control.
+Because public production traffic goes through same-origin Caddy routes, CORS should not be the primary security boundary. Treat it as browser hygiene, not access control.
 
 ## VictoriaMetrics Exposure
 
@@ -115,7 +107,7 @@ VictoriaMetrics can ingest, query, and delete or inspect data through its HTTP A
 
 Recommended hardening:
 
-- remove `/victoriametrics/` from Nginx after setup
+- remove `/victoriametrics/` from Caddy after setup
 - keep only `/api/v1/write` publicly routed for ingestion
 - query VictoriaMetrics from Grafana and backend over the Docker network
 - use firewall rules or VPN for debug access
@@ -124,9 +116,10 @@ Recommended hardening:
 
 Current images include floating tags for rapid iteration:
 
-- `victoriametrics/victoria-metrics:latest`
+- `caddy:2-alpine`
+- `victoriametrics/victoria-metrics:v1.144.0`
 - `victoriametrics/vmagent:latest`
-- `grafana/grafana:latest`
+- `grafana/grafana:12.2.0`
 
 Before production:
 
@@ -151,8 +144,8 @@ Protect:
 - [ ] only `80` and `443` are open publicly
 - [ ] VictoriaMetrics `8428` is not public
 - [ ] TLS certificate is valid
-- [ ] `.htpasswd` exists and uses strong credentials
-- [ ] `.htpasswd`, cert private keys, and real env files are not committed
+- [ ] `BASIC_AUTH_HASH` exists and was generated from a strong password
+- [ ] cert private keys and real env files are not committed
 - [ ] `/victoriametrics/` is removed or intentionally protected
 - [ ] Docker image versions are pinned for production
 - [ ] backups are encrypted or access-controlled

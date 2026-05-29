@@ -12,7 +12,7 @@ vmagent on the LAN edge host
         |
         | remote_write over HTTPS + Basic Auth
         v
-Nginx on OCI
+Caddy on OCI
         |
         v
 VictoriaMetrics
@@ -28,7 +28,7 @@ This repository also contains a SolidStart frontend, but frontend implementation
 ```text
 infra/
   edge/                  # vmagent collector that runs near the sensor
-  oci/                   # OCI Docker Compose stack and Nginx config
+  oci/                   # OCI Docker Compose stack and Caddy config
 app/
   backend/               # Go + Gin API proxy for VictoriaMetrics
   mock-server/           # local fake backend API for development/demo use
@@ -65,9 +65,9 @@ Start with the documentation entry point:
 The recommended deployment uses two hosts:
 
 - LAN edge host: runs only `vmagent`, can reach the AirGradient device, and buffers remote-write samples locally.
-- OCI host: runs Nginx, VictoriaMetrics, Grafana, the Go backend, and supporting Docker volumes.
+- OCI host: runs Caddy, VictoriaMetrics, Grafana, the Go backend, and supporting Docker volumes.
 
-Only Nginx publishes host ports `80` and `443`. VictoriaMetrics port `8428`, Grafana port `3000`, and backend port `8080` stay private inside the Docker network.
+Only Caddy publishes host ports `80` and `443`. VictoriaMetrics port `8428`, Grafana port `3000`, and backend port `8080` stay private inside the Docker network.
 
 ## Local Backend Development
 
@@ -112,7 +112,7 @@ If your AirGradient firmware emits different names, override them with `METRIC_*
 Implemented:
 
 - LAN scraping with `vmagent`
-- remote write to VictoriaMetrics through Nginx
+- remote write to VictoriaMetrics through Caddy
 - VictoriaMetrics storage with 12-month retention
 - Grafana datasource and dashboard provisioning
 - Go backend API with metric normalization, timeouts, TTL cache, and request coalescing

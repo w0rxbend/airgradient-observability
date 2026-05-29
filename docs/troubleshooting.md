@@ -13,12 +13,12 @@ curl -fsS 'http://airgradient_xxx.local/metrics' | head
 2. Is `vmagent` running?
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 docker compose -f docker-compose.vmagent.yml ps
-docker compose -f docker-compose.vmagent.yml logs --tail=100 vmagent
+docker compose -f docker-compose.vmagent.yml logs --tail=100 vmagent-airgradient
 ```
 
-3. Is Nginx accepting HTTPS?
+3. Is Caddy accepting HTTPS?
 
 ```bash
 curl -I 'https://YOUR_DOMAIN/api/healthz'
@@ -63,7 +63,7 @@ Common causes:
 
 Fixes:
 
-- use a static DHCP lease and configure `infra/edge/prometheus.yml` with IP
+- use a static DHCP lease and configure `infra/edge/vm-agent-airgradient/prometheus.yml` with IP
 - verify sensor and edge host are on the same reachable network
 - inspect the AirGradient device configuration
 
@@ -72,15 +72,15 @@ Fixes:
 Check config:
 
 ```bash
-cd infra/edge
-docker compose -f docker-compose.vmagent.yml exec vmagent \
+cd infra/edge/vm-agent-airgradient
+docker compose -f docker-compose.vmagent.yml exec vmagent-airgradient \
   cat /etc/vmagent/prometheus.yml
 ```
 
 Check logs:
 
 ```bash
-docker compose -f docker-compose.vmagent.yml logs -f vmagent
+docker compose -f docker-compose.vmagent.yml logs -f vmagent-airgradient
 ```
 
 Common causes:
@@ -105,11 +105,11 @@ curl -u airgradient:'CHANGE_ME' \
   -I 'https://YOUR_DOMAIN/api/v1/write'
 ```
 
-Check Nginx logs:
+Check Caddy logs:
 
 ```bash
 cd infra/oci
-docker compose -f docker-compose.vm.yml logs --tail=200 nginx
+docker compose -f docker-compose.vm.yml logs --tail=200 caddy
 ```
 
 Check VictoriaMetrics logs:
@@ -123,33 +123,33 @@ Common causes:
 - wrong `DOMAIN`
 - expired or invalid TLS certificate
 - wrong Basic Auth credentials
-- Nginx container missing `.htpasswd`
+- `BASIC_AUTH_USER` or `BASIC_AUTH_HASH` missing or mismatched
 - firewall not allowing `443/tcp`
 - DNS points to the wrong host
 
-## Nginx Fails To Start
+## Caddy Fails To Start
 
-Validate mounted files:
+Validate mounted files and variables:
 
 ```text
-infra/oci/certs/fullchain.pem
-infra/oci/certs/privkey.pem
-infra/oci/.htpasswd
+infra/oci/Caddyfile
+DOMAIN
+BASIC_AUTH_USER
+BASIC_AUTH_HASH
 ```
 
 Validate config:
 
 ```bash
 cd infra/oci
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml run --rm nginx \
-  /bin/sh -c "envsubst '\$DOMAIN' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -t"
+DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml run --rm caddy caddy validate --config /etc/caddy/Caddyfile
 ```
 
 Common causes:
 
-- missing cert files
-- invalid certificate/key pair
-- missing `.htpasswd`
+- missing `BASIC_AUTH_HASH`
+- invalid Caddyfile
 - `DOMAIN` not set
 - port `80` or `443` already in use on host
 
@@ -174,7 +174,7 @@ If empty:
 
 - confirm `vmagent` can scrape the device
 - confirm remote write succeeds
-- check Nginx `/api/v1/write` logs
+- check Caddy `/api/v1/write` logs
 - check VictoriaMetrics container is healthy
 
 If names differ from docs:
@@ -304,9 +304,10 @@ Render config:
 
 ```bash
 cd infra/oci
-DOMAIN=example.com docker compose -f docker-compose.vm.yml config
+DOMAIN=example.com BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml config
 
-cd ../edge
+cd ../edge/vm-agent-airgradient
 DOMAIN=example.com VM_USER=user VM_PASSWORD=pass \
 docker compose -f docker-compose.vmagent.yml config
 ```
@@ -343,15 +344,16 @@ Restart OCI services:
 
 ```bash
 cd infra/oci
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml restart victoriametrics backend grafana nginx
+DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml restart victoriametrics backend grafana caddy
 ```
 
 Restart edge collector:
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 DOMAIN=YOUR_DOMAIN VM_USER=airgradient VM_PASSWORD='CHANGE_ME' \
-docker compose -f docker-compose.vmagent.yml restart vmagent
+docker compose -f docker-compose.vmagent.yml restart vmagent-airgradient
 ```
 
 Do not delete Docker volumes unless you intentionally want to remove stored data or retry buffers.

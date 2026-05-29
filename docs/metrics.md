@@ -45,7 +45,7 @@ To expose any of these through the backend, add a new metric key in `app/backend
 
 ## Labels
 
-`infra/edge/prometheus.yml` adds:
+`infra/edge/vm-agent-airgradient/prometheus.yml` adds:
 
 ```yaml
 labels:

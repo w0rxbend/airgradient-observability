@@ -15,7 +15,7 @@ vmagent
         |
         | remote_write HTTPS + Basic Auth
         v
-Nginx on OCI
+Caddy on OCI
   /api/v1/write -> VictoriaMetrics
         |
         v
@@ -34,7 +34,7 @@ The frontend is a downstream consumer of the Go backend API, but frontend implem
 |---|---|---|
 | AirGradient ONE | LAN device | emits Prometheus-compatible metrics at `/metrics` |
 | `vmagent` | LAN edge host | scrapes the device, adds static labels, buffers locally, remote-writes to OCI |
-| Nginx | OCI Docker Compose | terminates TLS, enforces Basic Auth, routes public paths |
+| Caddy | OCI Docker Compose | terminates TLS, enforces Basic Auth, routes public paths |
 | VictoriaMetrics | OCI Docker Compose | stores all metric samples |
 | Grafana | OCI Docker Compose | explores and visualizes VictoriaMetrics data |
 | Go backend | OCI Docker Compose or local dev | normalizes metric names, applies label filters, caches responses, serves app API |
@@ -87,7 +87,7 @@ The OCI Docker network keeps these internal:
 
 ## Public Routes
 
-Nginx routes:
+Caddy routes:
 
 | Public path | Upstream | Purpose |
 |---|---|---|
@@ -97,7 +97,7 @@ Nginx routes:
 | `/victoriametrics/` | `victoriametrics:8428` | optional debug/query access |
 | `/` | frontend service | UI surface, not covered in these docs |
 
-Every public route is behind Nginx TLS and Basic Auth in the current scaffold.
+Every public route is behind Caddy TLS and Basic Auth in the current scaffold.
 
 ## Query Model
 
@@ -143,6 +143,6 @@ Concurrent identical cache misses are coalesced with `singleflight`. Failed Vict
 ## Design Tradeoffs
 
 - A single-node VictoriaMetrics deployment is simpler than a clustered setup and appropriate for one home sensor.
-- Nginx is containerized so the OCI host can stay Docker-only.
+- Caddy is containerized so the OCI host can stay Docker-only.
 - Basic Auth is intentionally simple; stronger auth can be added later at the reverse proxy or network layer.
 - Metric catalog lives in Go code to keep the backend API stable even if device metric names change.

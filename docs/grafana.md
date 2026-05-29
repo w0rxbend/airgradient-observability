@@ -41,7 +41,7 @@ Open:
 https://YOUR_DOMAIN/grafana/
 ```
 
-Nginx Basic Auth protects the route. Grafana may also require its own login depending on Grafana defaults and configuration.
+Caddy Basic Auth protects the route. Grafana may also require its own login depending on Grafana defaults and configuration.
 
 ## Dashboard Contents
 

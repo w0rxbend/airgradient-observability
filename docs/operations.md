@@ -7,9 +7,9 @@ This page is the day-2 runbook for the LAN edge collector and OCI metrics stack.
 Edge:
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 docker compose -f docker-compose.vmagent.yml ps
-docker compose -f docker-compose.vmagent.yml logs --tail=100 vmagent
+docker compose -f docker-compose.vmagent.yml logs --tail=100 vmagent-airgradient
 ```
 
 OCI:
@@ -17,7 +17,7 @@ OCI:
 ```bash
 cd infra/oci
 docker compose -f docker-compose.vm.yml ps
-docker compose -f docker-compose.vm.yml logs --tail=100 nginx
+docker compose -f docker-compose.vm.yml logs --tail=100 caddy
 docker compose -f docker-compose.vm.yml logs --tail=100 victoriametrics
 docker compose -f docker-compose.vm.yml logs --tail=100 backend
 docker compose -f docker-compose.vm.yml logs --tail=100 grafana
@@ -117,18 +117,12 @@ Do not treat Grafana provisioning files as a complete backup of Grafana state if
 
 ## Certificate Renewal
 
-Nginx reads:
-
-```text
-infra/oci/certs/fullchain.pem
-infra/oci/certs/privkey.pem
-```
-
-After replacing certificates:
+Caddy obtains and renews certificates automatically when `80/tcp` and `443/tcp` are reachable. To force a Caddy restart after changing proxy configuration:
 
 ```bash
 cd infra/oci
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml restart nginx
+DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml restart caddy
 ```
 
 Validate:
@@ -143,14 +137,15 @@ To rotate Basic Auth:
 
 ```bash
 cd infra/oci
-docker run --rm httpd:2.4-alpine htpasswd -Bbn airgradient 'NEW_PASSWORD' > .htpasswd
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml restart nginx
+docker run --rm caddy:2-alpine caddy hash-password --plaintext 'NEW_PASSWORD'
+DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml up -d caddy
 ```
 
 Then update the edge host:
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 DOMAIN=YOUR_DOMAIN \
 VM_USER=airgradient \
 VM_PASSWORD='NEW_PASSWORD' \
@@ -163,7 +158,7 @@ Watch `vmagent` logs until remote write succeeds.
 
 Before upgrading:
 
-- read release notes for VictoriaMetrics, vmagent, Grafana, Go, and Nginx images
+- read release notes for VictoriaMetrics, vmagent, Grafana, Go, and Caddy images
 - take or confirm a recent snapshot
 - record current image digests/tags
 - run `docker compose config` for syntax validation
@@ -172,14 +167,16 @@ Upgrade OCI stack:
 
 ```bash
 cd infra/oci
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml pull
-DOMAIN=YOUR_DOMAIN docker compose -f docker-compose.vm.yml up -d --build
+DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml pull
+DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml up -d --build
 ```
 
 Upgrade edge:
 
 ```bash
-cd infra/edge
+cd infra/edge/vm-agent-airgradient
 DOMAIN=YOUR_DOMAIN VM_USER=airgradient VM_PASSWORD='...' \
 docker compose -f docker-compose.vmagent.yml pull
 DOMAIN=YOUR_DOMAIN VM_USER=airgradient VM_PASSWORD='...' \
@@ -192,7 +189,7 @@ docker compose -f docker-compose.vmagent.yml up -d
 
 1. Check AirGradient `/metrics` from the edge host.
 2. Check `vmagent` logs.
-3. Check Nginx logs for `POST /api/v1/write`.
+3. Check Caddy logs for `POST /api/v1/write`.
 4. Query VictoriaMetrics for recent `airgradient_co2_ppm`.
 5. Confirm TLS and Basic Auth credentials.
 
@@ -216,6 +213,6 @@ For a personal/home deployment, urgent action is usually needed when:
 
 - no samples have arrived for more than one hour while the sensor is online
 - `vmagentdata` grows continuously
-- TLS certificate expires or Nginx stops
+- TLS certificate expires or Caddy stops
 - VictoriaMetrics volume approaches disk capacity
 - backend `/api/metrics/current` returns errors for more than a few minutes

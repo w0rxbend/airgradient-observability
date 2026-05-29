@@ -1,5 +1,5 @@
 services:
-  vmagent:
+  vmagent-airgradient:
     image: docker.io/victoriametrics/vmagent:latest
     restart: unless-stopped
     volumes:
@@ -7,10 +7,9 @@ services:
       - vmagentdata:/vmagentdata
     command:
       - -promscrape.config=/etc/vmagent/prometheus.yml
-      - -remoteWrite.url=http://${VM_HOST:?set VM_HOST}:8428/api/v1/write
+      - -remoteWrite.url=https://${DOMAIN:?set DOMAIN}/api/v1/write
       - -remoteWrite.basicAuth.username=${VM_USER:?set VM_USER}
       - -remoteWrite.basicAuth.password=${VM_PASSWORD:?set VM_PASSWORD}
       - -remoteWrite.tmpDataPath=/vmagentdata
-
 volumes:
   vmagentdata:

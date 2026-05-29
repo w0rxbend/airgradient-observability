@@ -27,7 +27,7 @@ Run against local VictoriaMetrics:
 VM_URL=http://localhost:8428 go run ./cmd/server
 ```
 
-Run against production VictoriaMetrics through Nginx:
+Run against production VictoriaMetrics through Caddy:
 
 ```bash
 VM_URL=https://YOUR_DOMAIN/victoriametrics \
@@ -74,11 +74,12 @@ curl 'http://localhost:8081/api/metrics/range?metric=co2&range=24h&step=5m'
 
 ## Local VictoriaMetrics
 
-The OCI Compose stack can be used locally if Docker is available and required cert/auth files exist:
+The OCI Compose stack can be used locally if Docker is available and required Caddy auth variables are set:
 
 ```bash
 cd infra/oci
-DOMAIN=localhost docker compose -f docker-compose.vm.yml up -d victoriametrics
+DOMAIN=localhost BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml up -d victoriametrics
 ```
 
 For simpler backend-only work, you can also run VictoriaMetrics directly with Docker:
@@ -121,19 +122,20 @@ Validate Compose files:
 
 ```bash
 cd infra/oci
-DOMAIN=example.com docker compose -f docker-compose.vm.yml config
+DOMAIN=example.com BASIC_AUTH_USER=user BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml config
 
-cd ../edge
+cd ../edge/vm-agent-airgradient
 DOMAIN=example.com VM_USER=user VM_PASSWORD=pass \
 docker compose -f docker-compose.vmagent.yml config
 ```
 
-Validate Nginx config through the container:
+Validate the Caddy config through the container:
 
 ```bash
 cd infra/oci
-DOMAIN=example.com docker compose -f docker-compose.vm.yml run --rm nginx \
-  /bin/sh -c "envsubst '\$DOMAIN' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf && nginx -t"
+DOMAIN=example.com BASIC_AUTH_USER=user BASIC_AUTH_HASH='$2a$14$...' \
+docker compose -f docker-compose.vm.yml run --rm caddy caddy validate --config /etc/caddy/Caddyfile
 ```
 
 ## Documentation Changes
@@ -142,7 +144,7 @@ Docs should stay synchronized with code and config:
 
 - metric names in `definitions.go`, `docs/metrics.md`, `docs/grafana.md`, and `.env.example`
 - public API in `cmd/server/main.go`, `docs/api.md`, and `docs/backend.md`
-- routes in `infra/oci/nginx.conf`, `docs/architecture.md`, `docs/configuration.md`, and `docs/security.md`
+- routes in `infra/oci/Caddyfile`, `docs/architecture.md`, `docs/configuration.md`, and `docs/security.md`
 - operational commands in `docs/deployment.md`, `docs/operations.md`, and `docs/troubleshooting.md`
 
 ## Current Test Gap

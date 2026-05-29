@@ -12,7 +12,7 @@ AirGradient ONE
 vmagent
         |
         v
-Nginx on OCI
+Caddy on OCI
         |
         v
 VictoriaMetrics
@@ -27,10 +27,10 @@ The repository also contains a frontend service, but frontend implementation is 
 
 | Milestone | Status | Evidence |
 |---|---|---|
-| M1: scrape AirGradient locally | implemented | `infra/edge/prometheus.yml` |
-| M2: remote-write to OCI | implemented | `infra/edge/docker-compose.vmagent.yml` writes to `/api/v1/write` |
+| M1: scrape AirGradient locally | implemented | `infra/edge/vm-agent-airgradient/prometheus.yml` |
+| M2: remote-write to OCI | implemented | `infra/edge/vm-agent-airgradient/docker-compose.vmagent.yml` writes to `/api/v1/write` |
 | M3: store metrics in VictoriaMetrics | implemented | `infra/oci/docker-compose.vm.yml` service `victoriametrics` |
-| M4: route public traffic through Nginx | implemented | `infra/oci/nginx.conf` |
+| M4: route public traffic through Caddy | implemented | `infra/oci/Caddyfile` |
 | M5: provision Grafana datasource/dashboard | implemented | `infra/oci/grafana/*.yml`, `dashboards/airgradient-one.json` |
 | M6: expose normalized backend API | implemented | `app/backend/cmd/server/main.go` |
 | M7: local mock backend | implemented | `app/mock-server` |

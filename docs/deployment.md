@@ -77,6 +77,8 @@ cd infra/oci
 DOMAIN=metrics.example.com \
 BASIC_AUTH_USER=airgradient \
 BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml up -d
 ```
 
@@ -95,6 +97,8 @@ Validate the rendered Compose config if startup fails:
 DOMAIN=metrics.example.com \
 BASIC_AUTH_USER=airgradient \
 BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml config
 ```
 
@@ -211,7 +215,9 @@ cd infra/oci
 DOMAIN=metrics.example.com \
 BASIC_AUTH_USER=airgradient \
 BASIC_AUTH_HASH='$2a$14$...' \
-docker compose -f docker-compose.vm.yml up -d --build
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
+docker compose -f docker-compose.vm.yml up -d
 ```
 
 For edge config changes:

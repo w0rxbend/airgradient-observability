@@ -50,8 +50,7 @@ services:
       - ./../../dashboards/metrics-explorer.json:/var/lib/grafana/dashboards/metrics-explorer.json
 
   backend:
-    build:
-      context: ../../app/backend
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE}
     restart: unless-stopped
     environment:
       ADDR: :8080
@@ -65,8 +64,7 @@ services:
       - victoriametrics
 
   frontend:
-    build:
-      context: ../../app/frontend
+    image: ${FRONTEND_IMAGE:?set FRONTEND_IMAGE}
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:8080

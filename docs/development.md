@@ -79,7 +79,9 @@ The OCI Compose stack can be used locally if Docker is available and required Ca
 ```bash
 cd infra/oci
 DOMAIN=localhost BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
-docker compose -f docker-compose.vm.yml up -d victoriametrics
+BACKEND_IMAGE=airgradient-backend:local \
+FRONTEND_IMAGE=airgradient-frontend:local \
+docker compose -f docker-compose.vm.yml -f docker-compose.vm.build.yml up -d --build
 ```
 
 For simpler backend-only work, you can also run VictoriaMetrics directly with Docker:
@@ -123,7 +125,14 @@ Validate Compose files:
 ```bash
 cd infra/oci
 DOMAIN=example.com BASIC_AUTH_USER=user BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=airgradient-backend:local \
+FRONTEND_IMAGE=airgradient-frontend:local \
 docker compose -f docker-compose.vm.yml config
+
+DOMAIN=example.com BASIC_AUTH_USER=user BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=airgradient-backend:local \
+FRONTEND_IMAGE=airgradient-frontend:local \
+docker compose -f docker-compose.vm.yml -f docker-compose.vm.build.yml config
 
 cd ../edge/vm-agent-airgradient
 DOMAIN=example.com VM_USER=user VM_PASSWORD=pass \

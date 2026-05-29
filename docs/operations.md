@@ -168,9 +168,13 @@ Upgrade OCI stack:
 ```bash
 cd infra/oci
 DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
 docker compose -f docker-compose.vm.yml pull
 DOMAIN=YOUR_DOMAIN BASIC_AUTH_USER=airgradient BASIC_AUTH_HASH='$2a$14$...' \
-docker compose -f docker-compose.vm.yml up -d --build
+BACKEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-backend:latest \
+FRONTEND_IMAGE=ghcr.io/YOUR_ORG/airgradient-frontend:latest \
+docker compose -f docker-compose.vm.yml up -d
 ```
 
 Upgrade edge:

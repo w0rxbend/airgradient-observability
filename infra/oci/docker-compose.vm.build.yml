@@ -1,0 +1,12 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-airgradient-backend:local}
+    build:
+      context: ../../app/backend
+      dockerfile: Dockerfile
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-airgradient-frontend:local}
+    build:
+      context: ../../app/frontend
+      dockerfile: Dockerfile
